@@ -314,13 +314,16 @@
     fitRecent();
     Reminders.render();
   }
-  // «Последние записи»: каждая запись в одну строку — шрифт уменьшается, пока строка не поместится
+  // «Последние записи»: каждая запись в одну строку. Шрифт один для всех строк — подбирается
+  // по самой длинной: уменьшается, пока все строки не поместятся (не меньше 10,5 px; дальше название сокращается «…»)
   function fitRecent() {
-    document.querySelectorAll('.recent-item').forEach(function (el) {
-      var fs = 14, l = el.querySelector('.ri-l') || el; el.style.fontSize = fs + 'px';
-      function over() { return el.scrollWidth > el.clientWidth + 1 || l.scrollWidth > l.clientWidth + 1; }
-      while (over() && fs > 10.5) { fs -= 0.5; el.style.fontSize = fs + 'px'; } // дальше название сокращается «…»
-    });
+    var items = [].slice.call(document.querySelectorAll('.recent-item')), box = document.querySelector('.recent');
+    if (!items.length || !box) return;
+    var fs = 14;
+    function setFs() { box.style.setProperty('--recent-fs', fs + 'px'); }
+    function over() { return items.some(function (el) { var l = el.querySelector('.ri-l') || el; return el.scrollWidth > el.clientWidth + 1 || l.scrollWidth > l.clientWidth + 1; }); }
+    setFs();
+    while (over() && fs > 10.5) { fs -= 0.5; setFs(); }
   }
   var fitTimer; window.addEventListener('resize', function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitRecent, 150); });
   // компактная строка записи: «17:23 Подколка   💉3,5 ЕД 🍞2,5 ХЕ 🩸12,4→8,1»
