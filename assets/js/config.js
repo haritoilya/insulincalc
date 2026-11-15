@@ -9,7 +9,7 @@ window.APP_CONFIG = {
   GOOGLE_CLIENT_ID: '207213151715-oie38vb2489g22q7n4ma0m0tgjp2hb45.apps.googleusercontent.com',
 
   // API key (ограничьте: Google Picker API + HTTP referrers вашего домена)
-  GOOGLE_API_KEY: 'PASTE_YOUR_API_KEY',
+  GOOGLE_API_KEY: 'AIzaSyD3Sz8ybq5FGCxM05919kj1D8hLGl4YEt4',
 
   // Номер проекта Google Cloud (Project number, только цифры) — нужен для Picker
   GOOGLE_APP_ID: '207213151715',
