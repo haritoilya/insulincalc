@@ -18,7 +18,7 @@
       'gate.demo': 'Попробовать без входа (демо)',
       'gate.privacy': 'Мы не храним ваши медицинские данные на своих серверах. Сайт получает доступ только к файлам, которые он сам создал или которые вы выбрали.',
       'gate.scopeDenied': 'Чтобы сохранять записи, отметьте галочку доступа к Google Drive при входе.',
-      'gate.notConfigured': 'Вход через Google ещё не настроен владельцем сайта (config.js). Доступен демо-режим.',
+      'gate.notConfigured': 'Вход через Google сейчас недоступен: браузер загрузил старую версию сайта. Обновите страницу с очисткой кеша (Ctrl+F5, на телефоне — закройте и откройте вкладку). Пока доступен демо-режим.',
       'demo.banner': 'Демо-режим: данные хранятся только в этом браузере.',
       'demo.signin': 'Войти и сохранять в Google',
 
@@ -172,7 +172,7 @@
       'gate.demo': 'Try without signing in (demo)',
       'gate.privacy': 'We never store your health data on our servers. The site can only access files it created or that you picked.',
       'gate.scopeDenied': 'To save entries, please tick the Google Drive access checkbox when signing in.',
-      'gate.notConfigured': 'Google sign-in is not configured yet (config.js). Demo mode is available.',
+      'gate.notConfigured': 'Google sign-in is unavailable: your browser loaded an old version of the site. Reload with cache clearing (Ctrl+F5; on mobile, close and reopen the tab). Demo mode is available meanwhile.',
       'demo.banner': 'Demo mode: data is stored in this browser only.',
       'demo.signin': 'Sign in and save to Google',
 

@@ -497,7 +497,13 @@
       $('#g-demo').onclick = function () { ls('ic_mode', 'demo'); Shell.boot(Shell.page, Shell.onReady); };
     },
     startGoogle: function () {
-      Auth.signIn().then(function () { Shell.renderHeader(); return Shell.setupSheet(false); })
+      // Повторный вход (сессия истекла): сразу возвращаемся к уже выбранной таблице, без лишних окон
+      Auth.signIn().then(function () {
+        Shell.renderHeader();
+        var info = ls(Shell.sheetKey());
+        if (info) { Store.current = new SheetStore(info); return Shell.start(); }
+        return Shell.setupSheet(false);
+      })
         .catch(function (e) {
           if (e.name === 'AuthError') Shell.gate(t('gate.scopeDenied'));
           else Shell.handleError(e);
