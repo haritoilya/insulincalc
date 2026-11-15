@@ -6,7 +6,7 @@
    ============================================================================ */
 window.APP_CONFIG = {
   // OAuth 2.0 Client ID (тип «Web application»)
-  GOOGLE_CLIENT_ID: 'PASTE_YOUR_CLIENT_ID.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: '207213151715-oie38vb2489g22q7n4ma0m0tgjp2hb45.apps.googleusercontent.com',
 
   // API key (ограничьте: Google Picker API + HTTP referrers вашего домена)
   GOOGLE_API_KEY: 'PASTE_YOUR_API_KEY',
