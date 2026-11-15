@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Калькулятор дозы инсулина — InsulinCalc</title>
+<meta name="description" content="Пошаговый калькулятор болюса инсулина: углеводы (ХЕ/граммы), УК, ФЧИ, целевая глюкоза, шаг ручки. Записи сохраняются в вашу Google Таблицу.">
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="https://insulincalc.online/app/">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+<div class="demo-bar" id="demo-bar"></div>
+
+<main class="narrow">
+  <div id="gate" style="display:none"></div>
+  <div id="app" style="display:none">
+    <div class="card calc">
+      <h1 class="calc-title" data-i18n="calc.h1"></h1>
+      <div id="reminders"></div>
+      <div id="view"></div>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/core.js"></script>
+<script src="/assets/js/stats.js"></script>
+<script src="/assets/js/calc.js"></script>
+</body>
+</html>

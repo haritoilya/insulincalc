@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Free Insulin Dose Calculator & Type 1 Diabetes Log — InsulinCalc</title>
+<meta name="description" content="Free online bolus insulin calculator using carbs, insulin-to-carb ratio and correction factor (ISF). Log everything to your own Google Sheet and review your real ratios. mmol/L & mg/dL.">
+<link rel="canonical" href="https://insulincalc.online/en/">
+<link rel="alternate" hreflang="ru" href="https://insulincalc.online/">
+<link rel="alternate" hreflang="en" href="https://insulincalc.online/en/">
+<link rel="alternate" hreflang="x-default" href="https://insulincalc.online/en/">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="InsulinCalc">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta property="og:title" content="Free Insulin Dose Calculator & T1D Log — InsulinCalc">
+<meta property="og:description" content="Calculate your bolus from carbs, carb ratio and ISF, keep your log in your own Google Sheet and review your real ratios. Free, no install.">
+<meta property="og:url" content="https://insulincalc.online/en/">
+<meta property="og:image" content="https://insulincalc.online/assets/img/og-image-en.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebApplication","name":"InsulinCalc — insulin dose calculator","url":"https://insulincalc.online/app/","applicationCategory":"HealthApplication","operatingSystem":"Any (web browser)","inLanguage":"en","isAccessibleForFree":true,
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+  "description":"Step-by-step bolus insulin calculator using carbs, insulin-to-carb ratio and insulin sensitivity factor, with a diabetes log stored in your own Google Sheet and ratio reports.",
+  "featureList":["Meal and correction bolus calculation","Grams or carb units, mmol/L or mg/dL","Rounding to pen dose step","2 h and 4 h glucose check reminders","Carb ratio and ISF estimates from real readings","Data stays in your Google Sheet"]},
+ {"@type":"FAQPage","mainEntity":[
+  {"@type":"Question","name":"How do I calculate my mealtime insulin dose?","acceptedAnswer":{"@type":"Answer","text":"Meal dose = grams of carbs ÷ insulin-to-carb ratio (or carb units × units per carb unit). Add a correction = (current glucose − target) ÷ insulin sensitivity factor when you are above target. InsulinCalc does this step by step and rounds to your pen step."}},
+  {"@type":"Question","name":"Where is my data stored?","acceptedAnswer":{"@type":"Answer","text":"Only in your own Google Sheet in your Google Drive. The site has no database of health data and can only access files it created or that you picked."}},
+  {"@type":"Question","name":"Is it suitable for children with type 1 diabetes?","acceptedAnswer":{"@type":"Answer","text":"Yes. It was built by parents of a child with T1D. Several caregivers can share one log by sharing the Google Sheet. All ratios must be prescribed by your doctor."}},
+  {"@type":"Question","name":"Does it support mg/dL?","acceptedAnswer":{"@type":"Answer","text":"Yes. Choose mmol/L or mg/dL and enter carbs in grams or carb units (10, 12 or 15 g)."}}
+ ]}
+]}
+</script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="/en/"><img src="/assets/img/favicon.svg" alt="InsulinCalc" width="28" height="28"><span>InsulinCalc</span></a>
+  <nav class="nav"><a href="/app/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">Calculator</a><a href="/report/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">Reports</a><a href="/en/insulin-dose-guide/" class="hide-sm">How to calculate</a></nav>
+  <div class="right"><a class="lang-btn" href="/" hreflang="ru" style="text-decoration:none" onclick="try{localStorage.setItem('ic_lang','ru')}catch(e){}">RU</a></div>
+</div></header>
+
+<main>
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <h1>Free insulin dose calculator & type 1 diabetes log</h1>
+      <p class="lead">Step-by-step bolus calculation from carbs, carb ratio and correction factor. Every entry is saved to <b>your own Google Sheet</b>, and reports help you and your doctor fine-tune ratios using real readings.</p>
+      <div class="hero-cta">
+        <a class="btn primary big" href="/app/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">💉 Open the calculator</a>
+        <a class="btn ghost big" href="#how">How it works</a>
+      </div>
+      <p class="hero-note">✓ Free &nbsp;·&nbsp; ✓ Sign in with Google &nbsp;·&nbsp; ✓ No install &nbsp;·&nbsp; ✓ Phone & desktop</p>
+    </div>
+    <div class="mock" aria-hidden="true">
+      <div style="font-weight:700;color:#1a73e8;margin-bottom:8px">💉 Result — Breakfast</div>
+      <div class="mrow"><span>🩸 Current glucose</span><b>170 mg/dL</b></div>
+      <div class="mrow"><span>🍞 Carbs</span><b>45 g</b></div>
+      <div class="mrow"><span>Meal insulin (1 U : 10 g)</span><b>4.50 U</b></div>
+      <div class="mrow"><span>Correction (ISF 50)</span><b>1.00 U</b></div>
+      <div class="mrow"><span>Total</span><b>5.50 U → step 1</b></div>
+      <div class="dose-cards"><div class="dose-card down"><div class="small">⬇️ Lower</div><div class="d">5 U</div></div><div class="dose-card up"><div class="small">⬆️ Higher</div><div class="d">6 U</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="container">
+    <h2>Everything a T1D family needs</h2>
+    <p class="intro">Built by parents of a child with type 1 diabetes for everyday use at home, at school and on the go.</p>
+    <div class="features">
+      <div class="feature"><div class="ic">🧮</div><h3>Bolus in under a minute</h3><p>Meal insulin plus correction ((glucose − target) ÷ ISF). Two options — rounded down and up to your pen step of 0.1 / 0.5 / 1 U.</p></div>
+      <div class="feature"><div class="ic">📒</div><h3>Log in your Google Sheet</h3><p>On first sign-in we create a sheet in your Google Drive — or continue in the one you already have. Your data belongs only to you.</p></div>
+      <div class="feature"><div class="ic">🔔</div><h3>2 h & 4 h checks</h3><p>Reminders on the site, in the browser and in Google Calendar. A reading taken on time is linked to the injection automatically.</p></div>
+      <div class="feature"><div class="ic">📊</div><h3>Carb ratio & ISF insights</h3><p>Reports estimate your actual ratios from clean events, per meal and with regression — great for your next endocrinology visit.</p></div>
+      <div class="feature"><div class="ic">👨‍👩‍👧</div><h3>One log for all caregivers</h3><p>Share the sheet with the other parent, grandparents or the school nurse — every entry lands in one place.</p></div>
+      <div class="feature"><div class="ic">🌍</div><h3>Works worldwide</h3><p>mmol/L or mg/dL, grams or carb units (10/12/15 g), English and Russian.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block alt" id="how">
+  <div class="container">
+    <h2>Get started</h2>
+    <p class="intro">Three steps and your log is ready.</p>
+    <ol class="steps">
+      <li><h3>Sign in with Google</h3><p class="muted">One click. The site only asks for access to files it creates.</p></li>
+      <li><h3>Create or connect a sheet</h3><p class="muted">No sheet yet? We create one and show you the link. Already have one? We continue there.</p></li>
+      <li><h3>Calculate and log</h3><p class="muted">Pick the meal, enter carbs and glucose — get the dose and reminders.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="container">
+    <h2>The insulin dose formula</h2>
+    <div style="max-width:760px;margin:0 auto">
+      <div class="formula">Meal dose = carbs (g) ÷ ICR &nbsp;(or CU × U per CU)<br>Correction = (Glucose<sub>current</sub> − Glucose<sub>target</sub>) ÷ ISF<br>Bolus = Meal dose + Correction → rounded to pen step</div>
+      <p><b>Example:</b> 45 g of carbs, ICR 1 U : 10 g, glucose 170 mg/dL, target 120, ISF 50 mg/dL per unit. Meal: 45 ÷ 10 = 4.5 U; correction: (170 − 120) ÷ 50 = 1.0 U; total 5.5 U.</p>
+      <p><a href="/en/insulin-dose-guide/">Full guide: carb ratio, ISF and how to calculate a bolus →</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="block alt">
+  <div class="container" style="max-width:860px">
+    <h2>FAQ</h2>
+    <div class="faq">
+      <details open><summary>How do I calculate my mealtime insulin dose?</summary><p>Meal dose = grams of carbs ÷ insulin-to-carb ratio (or carb units × units per carb unit). Add a correction = (current glucose − target) ÷ insulin sensitivity factor when you are above target. InsulinCalc does this step by step and rounds to your pen step.</p></details>
+      <details><summary>Where is my data stored?</summary><p>Only in your own Google Sheet in your Google Drive. The site has no database of health data and can only access files it created or that you picked. See our <a href="/privacy/">privacy policy</a>.</p></details>
+      <details><summary>Is it suitable for children with type 1 diabetes?</summary><p>Yes. It was built by parents of a child with T1D. Several caregivers can share one log by sharing the Google Sheet. All ratios must be prescribed by your doctor.</p></details>
+      <details><summary>Does it support mg/dL?</summary><p>Yes. Choose mmol/L or mg/dL and enter carbs in grams or carb units (10, 12 or 15 g) in Settings.</p></details>
+      <details><summary>Can I try it without signing in?</summary><p>Yes — demo mode stores entries in your browser only. Sign in with Google for a permanent log.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <h2>Try it now — it’s free</h2>
+  <a class="btn primary big" href="/app/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">💉 Open the calculator</a>
+  <p class="small" style="opacity:.85;margin-top:18px;max-width:720px;margin-left:auto;margin-right:auto">⚠️ InsulinCalc is a helper tool and not a medical device. It does not replace medical advice. Always double-check your dose and follow your prescribed treatment plan.</p>
+</section>
+</main>
+
+<footer class="site"><div class="container foot-grid">
+  <div>© <span id="y">2026</span> InsulinCalc · insulincalc.online</div>
+  <div class="foot-links"><a href="/en/insulin-dose-guide/">Insulin dose guide</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/" hreflang="ru">Русский</a></div>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+</body>
+</html>

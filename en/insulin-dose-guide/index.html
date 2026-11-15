@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Calculate an Insulin Dose: Carb Ratio, ISF & Correction — Guide with Examples</title>
+<meta name="description" content="How to calculate a mealtime and correction bolus: insulin-to-carb ratio (ICR), insulin sensitivity factor (ISF), formulas in mmol/L and mg/dL, worked examples and common mistakes.">
+<link rel="canonical" href="https://insulincalc.online/en/insulin-dose-guide/">
+<link rel="alternate" hreflang="en" href="https://insulincalc.online/en/insulin-dose-guide/">
+<link rel="alternate" hreflang="ru" href="https://insulincalc.online/kak-rasschitat-dozu-insulina/">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to calculate an insulin dose: carb ratio, ISF & correction">
+<meta property="og:description" content="Formulas and worked examples for mealtime and correction boluses in type 1 diabetes.">
+<meta property="og:url" content="https://insulincalc.online/en/insulin-dose-guide/">
+<meta property="og:image" content="https://insulincalc.online/assets/img/og-image-en.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Article","headline":"How to calculate an insulin dose: carb ratio, ISF & correction","inLanguage":"en","datePublished":"2026-11-14","dateModified":"2026-11-14","author":{"@type":"Organization","name":"InsulinCalc"},"publisher":{"@type":"Organization","name":"InsulinCalc","logo":{"@type":"ImageObject","url":"https://insulincalc.online/assets/img/icon-512.png"}},"mainEntityOfPage":"https://insulincalc.online/en/insulin-dose-guide/","image":"https://insulincalc.online/assets/img/og-image-en.jpg"},
+{"@type":"HowTo","name":"Calculate a mealtime bolus","inLanguage":"en","step":[
+ {"@type":"HowToStep","name":"Count carbs","text":"Count grams of carbohydrate in the meal."},
+ {"@type":"HowToStep","name":"Meal dose","text":"Divide grams by your insulin-to-carb ratio (ICR)."},
+ {"@type":"HowToStep","name":"Correction","text":"If above target: (current − target) ÷ ISF."},
+ {"@type":"HowToStep","name":"Round","text":"Add both parts, consider insulin on board and round to your pen or pump step."}]}
+]}
+</script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="/en/"><img src="/assets/img/favicon.svg" alt="InsulinCalc" width="28" height="28"><span>InsulinCalc</span></a>
+  <nav class="nav"><a href="/app/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">Calculator</a><a href="/report/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">Reports</a><a href="/en/insulin-dose-guide/" class="active hide-sm">How to calculate</a></nav>
+  <div class="right"><a class="lang-btn" href="/kak-rasschitat-dozu-insulina/" hreflang="ru" style="text-decoration:none">RU</a></div>
+</div></header>
+
+<article class="article">
+  <p class="small muted"><a href="/en/">Home</a> › Insulin dose guide</p>
+  <h1>How to calculate an insulin dose: carb ratio, ISF & correction</h1>
+  <div class="note warn">⚠️ For information only. Your carb ratio, ISF and target glucose must be set by your diabetes care team. Do not change your treatment on your own.</div>
+
+  <p>With multiple daily injections or a pump, the mealtime (bolus) dose has two parts: insulin to cover the <b>food</b> and insulin to <b>correct</b> high glucose.</p>
+
+  <h2>Insulin-to-carb ratio (ICR)</h2>
+  <p>ICR tells how many grams of carbs one unit of rapid-acting insulin covers (e.g. 1 U : 10 g). Some countries use carb units instead — 1 CU (XE/BE) = 10–12 g — and express the ratio as units per CU. Ratios often differ between breakfast, lunch and dinner.</p>
+  <div class="formula">Meal dose = carbs (g) ÷ ICR &nbsp; or &nbsp; CU × units per CU</div>
+
+  <h2>Insulin sensitivity factor (ISF)</h2>
+  <p>ISF (correction factor) is how much 1 unit lowers your glucose — e.g. 50 mg/dL (2.8 mmol/L) per unit.</p>
+  <div class="formula">Correction = (current glucose − target) ÷ ISF</div>
+
+  <h2>Worked example</h2>
+  <table>
+    <tr><th></th><th>mg/dL</th><th>mmol/L</th></tr>
+    <tr><td>Carbs</td><td colspan="2">60 g, ICR 1 U : 12 g → 5 U</td></tr>
+    <tr><td>Current / target</td><td>200 / 110</td><td>11.1 / 6.1</td></tr>
+    <tr><td>ISF</td><td>45 per U</td><td>2.5 per U</td></tr>
+    <tr><td>Correction</td><td>(200 − 110) ÷ 45 = 2 U</td><td>(11.1 − 6.1) ÷ 2.5 = 2 U</td></tr>
+    <tr><td><b>Total bolus</b></td><td colspan="2"><b>7 U</b></td></tr>
+  </table>
+  <p>If your pen doses in 0.5 or 1 U steps, round the result. Rounding down is usually safer, especially for children. InsulinCalc shows both options with a glucose forecast for each.</p>
+
+  <h2>Insulin on board</h2>
+  <p>Rapid-acting insulin works for about 3–5 hours. Correcting again too soon without accounting for insulin on board (IOB) is a common cause of lows. InsulinCalc warns you about active insulin from your log.</p>
+
+  <h2>How to check your ratios</h2>
+  <ul>
+    <li><b>Carb ratio:</b> if you start in range, glucose should return to about target 2–4 hours after the meal.</li>
+    <li><b>ISF:</b> check with a correction without food — how far glucose falls in 3–4 hours per unit given.</li>
+  </ul>
+  <p>The <a href="/report/">Reports</a> page estimates both automatically from your 2 h and 4 h readings: from clean events, per meal and with multiple regression — ready to discuss with your doctor.</p>
+
+  <h2>About the “500” and “1800” rules</h2>
+  <p>Rules of thumb (500 ÷ total daily dose for ICR, 1800 ÷ TDD for ISF in mg/dL, or 100 ÷ TDD in mmol/L) are starting points for clinicians. They are often inaccurate in children, teens and during the honeymoon phase; personal ratios come from your log.</p>
+
+  <h2>Common mistakes</h2>
+  <ul>
+    <li>Under- or over-counting carbs (drinks, sauces, fruit).</li>
+    <li>Giving a bolus when low — below 70 mg/dL (3.9 mmol/L) treat the low first.</li>
+    <li>Stacking corrections without considering insulin on board.</li>
+    <li>Random check times instead of 2 h and 4 h — this makes ratios impossible to assess.</li>
+  </ul>
+
+  <div class="card" style="text-align:center;margin-top:30px">
+    <h2 style="margin-top:0">Calculate your dose in a minute</h2>
+    <p class="muted">Step-by-step calculator with a log in your own Google Sheet.</p>
+    <a class="btn primary big" href="/app/" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">💉 Open the calculator</a>
+  </div>
+</article>
+
+<footer class="site"><div class="container foot-grid">
+  <div>© 2026 InsulinCalc</div>
+  <div class="foot-links"><a href="/en/">Home</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="/kak-rasschitat-dozu-insulina/" hreflang="ru">Русский</a></div>
+</div></footer>
+</body>
+</html>

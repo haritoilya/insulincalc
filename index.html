@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Калькулятор дозы инсулина онлайн и дневник диабета 1 типа — InsulinCalc</title>
+<meta name="description" content="Бесплатный калькулятор болюса инсулина по ХЕ, УК и ФЧИ для детей и взрослых с диабетом 1 типа. Дневник самоконтроля в вашей Google Таблице, отчёты и подбор коэффициентов.">
+<meta name="keywords" content="калькулятор инсулина, калькулятор дозы инсулина, расчет инсулина на ХЕ, хлебные единицы, углеводный коэффициент, ФЧИ, диабет 1 типа у ребенка, дневник самоконтроля">
+<link rel="canonical" href="https://insulincalc.online/">
+<link rel="alternate" hreflang="ru" href="https://insulincalc.online/">
+<link rel="alternate" hreflang="en" href="https://insulincalc.online/en/">
+<link rel="alternate" hreflang="x-default" href="https://insulincalc.online/en/">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/img/icon-192.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="InsulinCalc">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:locale:alternate" content="en_US">
+<meta property="og:title" content="Калькулятор дозы инсулина и дневник диабета — InsulinCalc">
+<meta property="og:description" content="Считайте болюс по ХЕ, УК и ФЧИ, ведите дневник в своей Google Таблице и уточняйте коэффициенты по реальным замерам. Бесплатно.">
+<meta property="og:url" content="https://insulincalc.online/">
+<meta property="og:image" content="https://insulincalc.online/assets/img/og-image.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/assets/css/style.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"https://insulincalc.online/#website","url":"https://insulincalc.online/","name":"InsulinCalc","inLanguage":["ru","en"]},
+ {"@type":"WebApplication","name":"InsulinCalc — калькулятор дозы инсулина","url":"https://insulincalc.online/app/","applicationCategory":"HealthApplication","operatingSystem":"Any (браузер)","inLanguage":"ru","isAccessibleForFree":true,
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+  "description":"Пошаговый расчёт болюсного инсулина по хлебным единицам, углеводному коэффициенту и фактору чувствительности; дневник в Google Таблице; отчёты по УК и ФЧИ.",
+  "featureList":["Расчёт дозы инсулина на еду и коррекцию","ХЕ или граммы, ммоль/л или мг/дл","Округление по шагу шприц-ручки","Напоминания о замерах через 2 и 4 часа","Подбор УК и ФЧИ по реальным замерам","Данные в вашей Google Таблице"]},
+ {"@type":"FAQPage","mainEntity":[
+  {"@type":"Question","name":"Как рассчитать дозу инсулина на еду?","acceptedAnswer":{"@type":"Answer","text":"Доза на еду = количество ХЕ × углеводный коэффициент (УК). К ней добавляется коррекция = (текущая глюкоза − целевая) ÷ ФЧИ, если глюкоза выше цели. InsulinCalc делает этот расчёт пошагово и округляет дозу по шагу вашей ручки."}},
+  {"@type":"Question","name":"Где хранятся мои данные?","acceptedAnswer":{"@type":"Answer","text":"Только в вашей Google Таблице в вашем Google Drive. Сайт не хранит медицинские данные на своих серверах и получает доступ лишь к файлам, которые он создал или которые вы выбрали."}},
+  {"@type":"Question","name":"Подходит ли калькулятор для ребёнка с диабетом 1 типа?","acceptedAnswer":{"@type":"Answer","text":"Да, сервис создан родителями ребёнка с диабетом 1 типа. Несколько взрослых могут вести один дневник: достаточно поделиться Google Таблицей. Все коэффициенты должны быть назначены врачом."}},
+  {"@type":"Question","name":"Это бесплатно?","acceptedAnswer":{"@type":"Answer","text":"Да, InsulinCalc бесплатен и не требует установки — работает в браузере на телефоне и компьютере."}},
+  {"@type":"Question","name":"Можно ли использовать мг/дл и граммы углеводов?","acceptedAnswer":{"@type":"Answer","text":"Да. В настройках можно выбрать ммоль/л или мг/дл, вводить углеводы в ХЕ или граммах и указать размер ХЕ (10, 12 или 15 г)."}}
+ ]}
+]}
+</script>
+</head>
+<body>
+<header class="topbar"><div class="topbar-in">
+  <a class="brand" href="/"><img src="/assets/img/favicon.svg" alt="InsulinCalc" width="28" height="28"><span>InsulinCalc</span></a>
+  <nav class="nav"><a href="/app/">Калькулятор</a><a href="/report/">Отчёты</a><a href="/kak-rasschitat-dozu-insulina/" class="hide-sm">Как считать</a></nav>
+  <div class="right"><a class="lang-btn" href="/en/" hreflang="en" style="text-decoration:none" onclick="try{localStorage.setItem('ic_lang','en')}catch(e){}">EN</a></div>
+</div></header>
+
+<main>
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <h1>Калькулятор дозы инсулина и дневник диабета 1 типа</h1>
+      <p class="lead">Пошаговый расчёт болюса по ХЕ, углеводному коэффициенту и ФЧИ. Каждая запись сохраняется в <b>вашу Google Таблицу</b>, а отчёты помогают вместе с врачом уточнять коэффициенты по реальным замерам.</p>
+      <div class="hero-cta">
+        <a class="btn primary big" href="/app/" onclick="try{localStorage.setItem('ic_lang','ru')}catch(e){}">💉 Открыть калькулятор</a>
+        <a class="btn ghost big" href="#how">Как это работает</a>
+      </div>
+      <p class="hero-note">✓ Бесплатно &nbsp;·&nbsp; ✓ Вход через Google &nbsp;·&nbsp; ✓ Без установки &nbsp;·&nbsp; ✓ Телефон и компьютер</p>
+    </div>
+    <div class="mock" aria-hidden="true">
+      <div style="font-weight:700;color:#1a73e8;margin-bottom:8px">💉 Результат — Завтрак</div>
+      <div class="mrow"><span>🩸 Текущая глюкоза</span><b>9,4 ммоль/л</b></div>
+      <div class="mrow"><span>🍞 Углеводы</span><b>3 ХЕ (36 г)</b></div>
+      <div class="mrow"><span>Инсулин на еду (УК 1,5)</span><b>4,50 ЕД</b></div>
+      <div class="mrow"><span>Коррекция (ФЧИ 2,5)</span><b>1,16 ЕД</b></div><div class="mrow"><span>Сумма</span><b>5,66 ЕД → шаг 0,5</b></div>
+      <div class="dose-cards"><div class="dose-card down"><div class="small">⬇️ Меньшая</div><div class="d">5,5 ЕД</div></div><div class="dose-card up"><div class="small">⬆️ Большая</div><div class="d">6,0 ЕД</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="container">
+    <h2>Всё, что нужно семье с диабетом 1 типа</h2>
+    <p class="intro">Инструмент сделан родителями ребёнка с СД1 для ежедневного использования дома, в школе и в поездках.</p>
+    <div class="features">
+      <div class="feature"><div class="ic">🧮</div><h3>Расчёт болюса за минуту</h3><p>Инсулин на еду (ХЕ × УК) + коррекция ((глюкоза − цель) ÷ ФЧИ). Две дозы на выбор — с округлением вниз и вверх по шагу ручки 0,1 / 0,5 / 1 ЕД.</p></div>
+      <div class="feature"><div class="ic">📒</div><h3>Дневник в Google Таблице</h3><p>При первом входе сайт создаёт таблицу в вашем Google Drive или продолжает записи в существующей. Данные принадлежат только вам.</p></div>
+      <div class="feature"><div class="ic">🔔</div><h3>Замеры через 2 и 4 часа</h3><p>Напоминания на сайте, в браузере и в Google Календаре. Замер, сделанный вовремя, автоматически привязывается к инъекции.</p></div>
+      <div class="feature"><div class="ic">📊</div><h3>Подбор УК и ФЧИ</h3><p>Отчёты считают фактические коэффициенты: по «чистым» событиям, по каждому приёму пищи и методом регрессии. Удобно обсуждать с эндокринологом.</p></div>
+      <div class="feature"><div class="ic">👨‍👩‍👧</div><h3>Один дневник на всю семью</h3><p>Поделитесь таблицей со вторым родителем, бабушкой или школьной медсестрой — все записи окажутся в одном месте.</p></div>
+      <div class="feature"><div class="ic">🌍</div><h3>Для любой страны</h3><p>ммоль/л или мг/дл, ХЕ (10/12/15 г) или граммы углеводов, русский и английский интерфейс.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block alt" id="how">
+  <div class="container">
+    <h2>Как начать</h2>
+    <p class="intro">Три шага — и дневник готов.</p>
+    <ol class="steps">
+      <li><h3>Войдите через Google</h3><p class="muted">Один клик. Сайт запрашивает доступ только к файлам, которые сам создаёт.</p></li>
+      <li><h3>Создайте или подключите таблицу</h3><p class="muted">Если таблицы нет — создадим новую и покажем ссылку. Если есть — продолжим записи в ней.</p></li>
+      <li><h3>Считайте и записывайте</h3><p class="muted">Выберите приём пищи, введите углеводы и глюкозу — получите дозу и напоминания о замерах.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="block">
+  <div class="container">
+    <h2>Формула расчёта дозы инсулина</h2>
+    <p class="intro">Калькулятор использует стандартную схему базис-болюсной терапии.</p>
+    <div style="max-width:760px;margin:0 auto">
+      <div class="formula">Доза на еду = ХЕ × УК<br>Коррекция = (Глюкоза<sub>текущая</sub> − Глюкоза<sub>цель</sub>) ÷ ФЧИ<br>Болюс = Доза на еду + Коррекция → округление по шагу ручки</div>
+      <p><b>Пример:</b> завтрак 3 ХЕ, УК = 1,5 ЕД/ХЕ, глюкоза 9,0 ммоль/л, цель 6,5, ФЧИ = 2,5 ммоль/л на 1 ЕД. Еда: 3 × 1,5 = 4,5 ЕД; коррекция: (9,0 − 6,5) ÷ 2,5 = 1,0 ЕД; итого 5,5 ЕД.</p>
+      <p><a href="/kak-rasschitat-dozu-insulina/">Подробно: как рассчитать дозу инсулина, что такое УК, ФЧИ и ХЕ →</a></p>
+    </div>
+  </div>
+</section>
+
+<section class="block alt">
+  <div class="container" style="max-width:860px">
+    <h2>Частые вопросы</h2>
+    <div class="faq">
+      <details open><summary>Как рассчитать дозу инсулина на еду?</summary><p>Доза на еду = количество ХЕ × углеводный коэффициент (УК). К ней добавляется коррекция = (текущая глюкоза − целевая) ÷ ФЧИ, если глюкоза выше цели. InsulinCalc делает этот расчёт пошагово и округляет дозу по шагу вашей ручки.</p></details>
+      <details><summary>Где хранятся мои данные?</summary><p>Только в вашей Google Таблице в вашем Google Drive. Сайт не хранит медицинские данные на своих серверах и получает доступ лишь к файлам, которые он создал или которые вы выбрали. Подробнее — в <a href="/privacy/">политике конфиденциальности</a>.</p></details>
+      <details><summary>Подходит ли калькулятор для ребёнка с диабетом 1 типа?</summary><p>Да, сервис создан родителями ребёнка с диабетом 1 типа. Несколько взрослых могут вести один дневник: достаточно поделиться Google Таблицей. Все коэффициенты должны быть назначены врачом.</p></details>
+      <details><summary>Это бесплатно?</summary><p>Да, InsulinCalc бесплатен и не требует установки — работает в браузере на телефоне и компьютере. Сайт можно добавить на главный экран как приложение.</p></details>
+      <details><summary>Можно ли использовать мг/дл и граммы углеводов?</summary><p>Да. В настройках можно выбрать ммоль/л или мг/дл, вводить углеводы в ХЕ или граммах и указать размер ХЕ (10, 12 или 15 г).</p></details>
+      <details><summary>Можно попробовать без входа?</summary><p>Да, есть демо-режим: записи сохраняются только в браузере. Для постоянного дневника войдите через Google.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <h2>Попробуйте прямо сейчас — это бесплатно</h2>
+  <a class="btn primary big" href="/app/">💉 Открыть калькулятор</a>
+  <p class="small" style="opacity:.85;margin-top:18px;max-width:720px;margin-left:auto;margin-right:auto">⚠️ InsulinCalc — вспомогательный инструмент и не является медицинским изделием. Не заменяет консультацию врача. Всегда перепроверяйте дозу и следуйте назначенной схеме лечения.</p>
+</section>
+</main>
+
+<footer class="site"><div class="container foot-grid">
+  <div>© <span id="y">2026</span> InsulinCalc · insulincalc.online</div>
+  <div class="foot-links"><a href="/kak-rasschitat-dozu-insulina/">Как рассчитать дозу</a><a href="/privacy/">Конфиденциальность</a><a href="/terms/">Условия</a><a href="/en/" hreflang="en">English</a></div>
+</div></footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+</body>
+</html>

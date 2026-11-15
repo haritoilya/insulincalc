@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Отчёты: УК, ФЧИ, инсулин и глюкоза — InsulinCalc</title>
+<meta name="description" content="Анализ углеводного коэффициента и фактора чувствительности к инсулину по вашим записям, графики инсулина, веса и глюкозы.">
+<meta name="robots" content="noindex,follow">
+<link rel="canonical" href="https://insulincalc.online/report/">
+<meta name="theme-color" content="#1a73e8">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+<div class="demo-bar" id="demo-bar"></div>
+
+<main class="wide">
+  <div id="gate" style="display:none"></div>
+  <div id="app" style="display:none">
+    <div class="rep-head"><h1 data-i18n="rep.title"></h1><p data-i18n="rep.sub"></p></div>
+
+    <div class="card controls">
+      <label><span data-i18n="rep.days"></span><input type="number" id="days" min="1" max="365" value="14"></label>
+      <label><span data-i18n="rep.regr"></span><select id="regr"><option value="period" data-i18n="rep.regrPeriod"></option><option value="all" data-i18n="rep.regrAll"></option></select></label>
+      <button class="btn primary" id="build" data-i18n="rep.build"></button>
+    </div>
+
+    <!-- 1. Коэффициенты -->
+    <section class="card">
+      <h2 class="sec-title" data-i18n="rep.coef"></h2>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="independent" data-i18n="tab.independent"></button>
+        <button class="tab-btn" data-tab="meals" data-i18n="tab.meals"></button>
+        <button class="tab-btn" data-tab="regression" data-i18n="tab.regression"></button>
+      </div>
+      <div class="tab" id="tab-independent"><div class="note warn" data-i18n="rep.indepNote"></div><div class="kgrid" id="k-indep"></div></div>
+      <div class="tab" id="tab-meals" style="display:none"><div class="note ok" data-i18n="rep.mealsNote"></div><div class="kgrid" id="k-meals"></div></div>
+      <div class="tab" id="tab-regression" style="display:none"><div class="note ok" data-i18n="rep.regrNote"></div><div class="kgrid" id="k-regr"></div></div>
+      <p class="small muted" style="margin-top:14px">⚕️ <span data-i18n="rep.disclaimer"></span></p>
+    </section>
+
+    <!-- 2. Графики -->
+    <section class="card">
+      <h2 class="sec-title" data-i18n="rep.insulin"></h2>
+      <div class="chart-box"><h3 data-i18n="ch.daily"></h3><div class="chart" id="c-daily"></div></div>
+      <div class="chart-box"><h3 data-i18n="ch.perKg"></h3><div class="chart" id="c-kg"></div></div>
+      <div class="chart-box"><h3 data-i18n="ch.weight"></h3><div class="chart" id="c-weight"></div></div>
+      <div class="chart-box"><h3 data-i18n="ch.food"></h3><div class="chart" id="c-food"></div></div>
+      <div class="chart-box"><h3 data-i18n="ch.glucose"></h3><div class="chart" id="c-glucose"></div></div>
+    </section>
+
+    <!-- 3. Контроль глюкозы -->
+    <section class="card">
+      <h2 class="sec-title" data-i18n="rep.control"></h2>
+      <div class="metrics" id="metrics"></div>
+      <div class="note warn" style="margin-top:16px" data-i18n="rep.tip"></div>
+    </section>
+
+    <!-- 4. Журнал -->
+    <section class="card">
+      <h2 class="sec-title" data-i18n="rep.log"></h2>
+      <div class="tbl-wrap"><table class="log" id="log"></table></div>
+    </section>
+
+    <div class="actions">
+      <button class="btn primary" id="csv" data-i18n="rep.csv"></button>
+      <a class="btn secondary" id="open-sheet" target="_blank" rel="noopener" style="display:none" data-i18n="rep.openSheet"></a>
+      <button class="btn secondary" onclick="window.print()">🖨️ PDF</button>
+    </div>
+  </div>
+</main>
+
+<script src="/assets/vendor/chart.umd.min.js"></script>
+<script src="/assets/js/config.js"></script>
+<script src="/assets/js/i18n.js"></script>
+<script src="/assets/js/core.js"></script>
+<script src="/assets/js/stats.js"></script>
+<script src="/assets/js/report.js"></script>
+</body>
+</html>
