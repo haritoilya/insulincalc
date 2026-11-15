@@ -12,7 +12,7 @@ window.APP_CONFIG = {
   GOOGLE_API_KEY: 'PASTE_YOUR_API_KEY',
 
   // Номер проекта Google Cloud (Project number, только цифры) — нужен для Picker
-  GOOGLE_APP_ID: 'PASTE_YOUR_PROJECT_NUMBER',
+  GOOGLE_APP_ID: '207213151715',
 
   // Основной адрес сайта (для ссылок в письмах и канонических URL)
   SITE_URL: 'https://www.vidgenlab.pro',
