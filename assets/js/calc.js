@@ -303,12 +303,12 @@
       (io.iob > 0 ? '<div class="note">💉 ' + t('iob.warn', { iob: io.iob, dose: num(io.last.selected_dose), time: IC.fmtTime(IC.parseWhen(io.last)) }) + '</div>' : '') +
       (bi ? '<div class="note small">🌙 ' + t('basal.info', { dose: IC.dec(bi.dose), rate: IC.dec(bi.rate), until: IC.fmtTime(bi.until) }) + '</div>' : '') +
       '<button class="btn primary block big" id="m-start">' + t('menu.start') + '</button>' +
-      '<button class="btn secondary block" id="m-gl">' + t('menu.glucose') + '</button>' +
+      // кнопка «Записать замер глюкозы» убрана: замер фиксируется в момент расчёта, остальное видно на датчике.
+      // Шаг 'glucose' и saveGlucose оставлены в коде (не используются).
       '<div class="divider"></div><div class="row"><a class="btn report" href="/report/">' + t('menu.report') + '</a><button class="btn ghost" id="m-help">' + t('menu.help') + '</button></div>' +
       '<button class="btn ghost block" id="m-set" style="margin-top:10px">⚙️ ' + t('nav.settings') + '</button>' +
       '<div class="recent"><h3>' + t('menu.recent') + '</h3>' + (recent.length ? recent.map(recentRow).join('') : '<p class="muted small">' + t('menu.noRecent') + '</p>') + '</div>');
     $('#m-start').onclick = function () { S = {}; stack = ['menu']; go('meal'); };
-    $('#m-gl').onclick = function () { stack = ['menu']; go('glucose'); };
     $('#m-help').onclick = function () { stack = ['menu']; go('help'); };
     $('#m-set').onclick = function () { Shell.openSettings(); };
     Reminders.render();
