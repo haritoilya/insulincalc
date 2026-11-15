@@ -311,16 +311,31 @@
     $('#m-start').onclick = function () { S = {}; stack = ['menu']; go('meal'); };
     $('#m-help').onclick = function () { stack = ['menu']; go('help'); };
     $('#m-set').onclick = function () { Shell.openSettings(); };
+    fitRecent();
     Reminders.render();
   }
-  function recentRow(ev) {
-    var k = Stats.kind(ev), parts = [];
-    var d = num(ev.selected_dose); if (d) parts.push('💉 ' + d + ' ' + t('common.units'));
-    var xe = Units.xeOf(ev); if (xe) parts.push('🍞 ' + xe.toFixed(1) + ' ' + t('common.xe'));
-    var g = num(ev.current_glucose); if (g != null) parts.push('🩸 ' + Units.g(g));
-    var g2 = num(ev.glucose_2h); if (g2 != null) parts.push(t('log.g2') + '→' + Units.g(g2));
-    return '<div class="recent-item"><span>' + IC.fmtDate(IC.parseWhen(ev)) + ' · ' + t(KIND_LABEL[k]) + (ev._pending ? ' <span class="pending">⏳</span>' : '') + '</span><span class="muted">' + parts.join(' · ') + '</span></div>';
+  // «Последние записи»: каждая запись в одну строку — шрифт уменьшается, пока строка не поместится
+  function fitRecent() {
+    document.querySelectorAll('.recent-item').forEach(function (el) {
+      var fs = 14, l = el.querySelector('.ri-l') || el; el.style.fontSize = fs + 'px';
+      function over() { return el.scrollWidth > el.clientWidth + 1 || l.scrollWidth > l.clientWidth + 1; }
+      while (over() && fs > 10.5) { fs -= 0.5; el.style.fontSize = fs + 'px'; } // дальше название сокращается «…»
+    });
   }
+  var fitTimer; window.addEventListener('resize', function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitRecent, 150); });
+  // компактная строка записи: «17:23 Подколка   💉3,5 ЕД 🍞2,5 ХЕ 🩸12,4→8,1»
+  function recentRow(ev) {
+    var k = Stats.kind(ev), parts = [], w = IC.parseWhen(ev);
+    var d = num(ev.selected_dose); if (d) parts.push('💉' + IC.dec(d) + ' ' + t('common.units'));
+    var xe = Units.xeOf(ev); if (xe) parts.push('🍞' + IC.dec(Math.round(xe * 10) / 10) + ' ' + t('common.xe'));
+    var g = num(ev.current_glucose), g2 = num(ev.glucose_2h);
+    if (g != null || g2 != null) parts.push('🩸' + (g != null ? dg(g) : '—') + (g2 != null ? '→' + dg(g2) : ''));
+    var today = w && IC.fmtDate(w, true).split(',')[0] === IC.fmtDate(new Date(), true).split(',')[0];
+    var when = w ? (today ? IC.fmtTime(w) : IC.fmtDate(w)) : '—';
+    var label = t(KIND_LABEL[k]).replace(/^[^A-Za-zА-Яа-яЁё]+/, '').replace(/ без инсулина| without insulin/, '');
+    return '<div class="recent-item"><span class="ri-l">' + when + ' ' + esc(label) + (ev._pending ? ' <span class="pending">⏳</span>' : '') + '</span><span class="muted">' + parts.join(' ') + '</span></div>';
+  }
+  function dg(v) { var s = Units.g(v); return I18N.lang === 'ru' ? s.replace('.', ',') : s; }
 
   // ---------------------------------------------------------------- напоминания о замерах 2 ч / 4 ч
   var Reminders = {
