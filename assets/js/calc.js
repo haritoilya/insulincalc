@@ -333,8 +333,9 @@
     var d = num(ev.selected_dose); if (d) parts[0] = '💉' + IC.dec(d) + ' ' + t('common.units');
     var xe = Units.xeOf(ev); if (xe) parts[1] = '🍞' + IC.dec(Math.round(xe * 10) / 10) + ' ' + t('common.xe');
     var g = num(ev.current_glucose), g2 = num(ev.glucose_2h);
-    // глюкоза всегда в формате «до→через 2 ч»; если замера через 2 ч ещё нет — «—»
-    if (g != null || g2 != null) parts[2] = '🩸' + (g != null ? dg(g) : '—') + '→' + (g2 != null ? dg(g2) : '—');
+    // глюкоза всегда в формате «до→через 2 ч»; замера через 2 ч ещё нет: ⏳ — 2 часа не прошли, ? — прошли, а значения нет
+    var wait = w && Date.now() - w.getTime() < 2 * H ? '⏳' : '?';
+    if (g != null || g2 != null) parts[2] = '🩸' + (g != null ? dg(g) : '—') + '→' + (g2 != null ? dg(g2) : wait);
     var today = w && IC.fmtDate(w, true).split(',')[0] === IC.fmtDate(new Date(), true).split(',')[0];
     var when = w ? (today ? IC.fmtTime(w) : IC.fmtDate(w)) : '—';
     var label = t(KIND_LABEL[k]).replace(/^[^A-Za-zА-Яа-яЁё]+/, '').replace(/ без инсулина| without insulin/, '');
