@@ -157,7 +157,7 @@
         '<select id="tz-sel" class="num-input">' + opts + '</select><div class="note small" id="tz-preview"></div>' +
         '<div class="row">' + backBtn() + '<button class="btn primary" id="ok">' + t('btn.save') + '</button></div>');
       var sel = $('#tz-sel'); sel.value = zones.indexOf(cur) >= 0 ? cur : 'auto';
-      function prev() { var z = sel.value === 'auto' ? auto : sel.value; $('#tz-preview').innerHTML = '🕐 ' + t('tz.local') + ': <b>' + IC.stamp(new Date(), z) + '</b><br>🇷🇺 ' + t('tz.msk') + ': <b>' + IC.stamp(new Date()) + '</b>'; }
+      function prev() { var z = sel.value === 'auto' ? auto : sel.value; $('#tz-preview').innerHTML = '🕐 ' + t('tz.local') + ': <b>' + IC.stamp(new Date(), z) + '</b> (timestamp_moscow)<br>🌐 ' + t('tz.utc') + ': <b>' + IC.stamp(new Date(), 'UTC') + '</b> (timestamp_w)'; }
       sel.onchange = prev; prev();
       $('#ok').onclick = function () { Settings.set({ tz: sel.value }); back(); };
     },
@@ -170,7 +170,7 @@
   function tzLine() {
     var now = new Date(), z = IC.userTz(), auto = (Settings.get('tz') || 'auto') === 'auto';
     return '<div class="tz-line"><span>🕐 ' + t('tz.local') + ': <b>' + IC.stamp(now, z) + '</b> <span class="muted">' + esc(z.replace(/_/g, ' ')) + ', ' + IC.tzLabel(z, now) + (auto ? ', ' + t('tz.autoShort') : '') + '</span>' +
-      (z !== IC.MSK ? '<br><span class="muted">🇷🇺 ' + t('tz.msk') + ': ' + IC.stamp(now) + '</span>' : '') + '</span>' +
+      '<br><span class="muted">🌐 ' + t('tz.utc') + ': ' + IC.stamp(now, 'UTC') + '</span></span>' +
       '<button class="link-btn" id="tz-change">' + t('tz.change') + '</button></div>';
   }
   function tzList() {
@@ -231,10 +231,10 @@
   function persistUC() { var s = {}; ['target', 'isf', 'penStep', 'carbUnit', 'xeGrams', 'uc_breakfast', 'uc_lunch', 'uc_dinner', 'uc_snack'].forEach(function (k) { s[k] = Settings.get(k); }); Settings.set(s); }
 
   function base(now, type, sub) {
-    // timestamp и timestamp_moscow — московское время (от него считаются замеры через 2 и 4 ч),
-    // timestamp_w — местное время в выбранном часовом поясе
-    var msk = stampRU(now);
-    return { event_id: Store.uid(), timestamp: msk, timestamp_moscow: msk, timestamp_w: IC.stamp(now, IC.userTz()), event_type: type, event_subtype: sub };
+    // timestamp_moscow — местное время в выбранном поясе (по умолчанию — пояс устройства; название поля временное),
+    // timestamp_w — то же время в UTC («время 0»),
+    // timestamp — московское: по нему скрипт таблицы и автозаполнение с сервера считают замеры через 2 и 4 ч
+    return { event_id: Store.uid(), timestamp: stampRU(now), timestamp_moscow: IC.stamp(now, IC.userTz()), timestamp_w: IC.stamp(now, 'UTC'), event_type: type, event_subtype: sub };
   }
 
   function saving(on) { Shell.busy(on, t('common.saving')); }

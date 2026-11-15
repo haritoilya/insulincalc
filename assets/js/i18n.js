@@ -63,8 +63,8 @@
       'iob.warn': 'Активный инсулин ≈ {iob} ЕД (последний болюс {dose} ЕД в {time}). Учтите это перед коррекцией.',
 
       'step.meal': '1️⃣ Выберите тип события',
-      'tz.local': 'Время расчёта', 'tz.msk': 'по Москве', 'tz.change': 'Изменить пояс', 'tz.auto': 'Авто (пояс устройства)', 'tz.autoShort': 'авто',
-      'tz.title': '🌍 Часовой пояс', 'tz.hint': 'Выберите, где вы сейчас находитесь (например, в отпуске). Местное время запишется в timestamp_w, московское — в timestamp_moscow; замеры через 2 и 4 часа считаются от московского времени.',
+      'tz.local': 'Время расчёта', 'tz.utc': 'UTC (время 0)', 'tz.msk': 'по Москве', 'tz.change': 'Изменить пояс', 'tz.auto': 'Авто (пояс устройства)', 'tz.autoShort': 'авто',
+      'tz.title': '🌍 Часовой пояс', 'tz.hint': 'По умолчанию — пояс вашего устройства. Если вы в другом поясе (например, в отпуске), выберите его. Местное время запишется в timestamp_moscow, время UTC — в timestamp_w.',
       'meal.breakfast': 'Завтрак', 'meal.lunch': 'Обед', 'meal.dinner': 'Ужин',
       'meal.correction': 'Подколка', 'meal.snack': '🍪 Перекус без инсулина', 'meal.basal': '🌙 Базальный',
       'meal.glucose': 'Замер глюкозы',
@@ -219,8 +219,8 @@
       'iob.warn': 'Insulin on board ≈ {iob} U (last bolus {dose} U at {time}). Consider it before correcting.',
 
       'step.meal': '1️⃣ Choose event type',
-      'tz.local': 'Calculation time', 'tz.msk': 'Moscow time', 'tz.change': 'Change time zone', 'tz.auto': 'Auto (device time zone)', 'tz.autoShort': 'auto',
-      'tz.title': '🌍 Time zone', 'tz.hint': 'Choose where you are now (e.g. on holiday). Local time is saved to timestamp_w, Moscow time to timestamp_moscow; 2 h and 4 h readings are counted from Moscow time.',
+      'tz.local': 'Calculation time', 'tz.utc': 'UTC (time 0)', 'tz.msk': 'Moscow time', 'tz.change': 'Change time zone', 'tz.auto': 'Auto (device time zone)', 'tz.autoShort': 'auto',
+      'tz.title': '🌍 Time zone', 'tz.hint': 'Defaults to your device time zone. If you are elsewhere (e.g. on holiday), choose that zone. Local time is saved to timestamp_moscow, UTC time to timestamp_w.',
       'meal.breakfast': 'Breakfast', 'meal.lunch': 'Lunch', 'meal.dinner': 'Dinner',
       'meal.correction': 'Correction', 'meal.snack': '🍪 Snack without insulin', 'meal.basal': '🌙 Basal',
       'meal.glucose': 'Glucose reading',

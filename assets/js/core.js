@@ -77,8 +77,8 @@
   function fmtTime(d) { return new Date(d).toLocaleTimeString(I18N.lang === 'ru' ? 'ru-RU' : undefined, { hour: '2-digit', minute: '2-digit', timeZone: userTz() }); }
 
   // ---------------------------------------------------------------- время
-  // Опорное время — московское (timestamp, timestamp_moscow, glucose_*_timestamp): от него считает
-  // скрипт таблицы и автозаполнение замеров с сервера. timestamp_w — местное время в выбранном поясе.
+  // timestamp_moscow — местное время в выбранном поясе, timestamp_w — UTC («время 0»).
+  // timestamp и glucose_*_timestamp — московское время: так их читают скрипт таблицы и автозаполнение с сервера.
   var MSK = 'Europe/Moscow', MSK_OFFSET = 3; // Москва: UTC+3 круглый год
   function autoTz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || MSK; } catch (e) { return MSK; } }
   // выбранный пояс: из настроек («auto» или IANA-имя, например Asia/Bangkok)
@@ -105,13 +105,15 @@
   }
   // серийная дата Google Sheets (таблица в московском поясе) → момент времени
   function fromSerial(n) { return new Date(Math.round((n - 25569) * 86400000) - MSK_OFFSET * 3600000); }
-  // Время события: timestamp_moscow → timestamp → created_at (старые записи)
+  // Время события: timestamp (московское) → timestamp_w (UTC) → created_at (старые записи).
+  // timestamp_moscow — местное время без указания пояса, поэтому для расчётов не используется.
   function parseWhen(ev) {
-    var vals = [ev.timestamp_moscow, ev.timestamp, ev.created_at];
+    var vals = [ev.timestamp, ev.timestamp_w, ev.created_at];
     for (var i = 0; i < vals.length; i++) {
       var c = vals[i];
       if (c == null || c === '') continue;
-      if (typeof c === 'number') return fromSerial(c);
+      if (i === 1 && typeof c === 'string') { var u = parseMsk(c); if (u) return new Date(u.getTime() + MSK_OFFSET * 3600000); }
+      if (typeof c === 'number') return i === 1 ? new Date(Math.round((c - 25569) * 86400000)) : fromSerial(c);
       var d = parseMsk(c); if (d) return d;
       if (/^\d{4}-\d{2}-\d{2}/.test(String(c))) { d = new Date(c); if (!isNaN(d)) return d; }
     }
@@ -340,7 +342,7 @@
   // Даты, записанные в другом формате (ISO «2026-11-15T12:06:22.953Z» или серийное число),
   // переписываем в таблице в единый формат «15.11.2026, 12:10». Выполняется в фоне.
   SheetStore.prototype.fixDates = function () {
-    var self = this, cols = ['timestamp', 'timestamp_moscow', 'glucose_2h_timestamp', 'glucose_4h_timestamp'], data = [];
+    var self = this, cols = ['timestamp', 'glucose_2h_timestamp', 'glucose_4h_timestamp'], data = [];
     function odd(v) { return typeof v === 'number' || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)); }
     (this.events || []).forEach(function (e) {
       if (!e._row) return;
