@@ -12,15 +12,16 @@
   var MGDL = 18.0182;
   var XE_MIN = 9, XE_MAX = 13; // допустимый вес 1 ХЕ, г
 
-  // Колонки листа «Events» — совпадают со структурой рабочей таблицы.
+  // Колонки листа — в том же порядке, что в рабочей таблице (31 колонка; скрипт таблицы и автозаполнение
+  // с сервера Juggluco обращаются к колонкам по номеру, поэтому порядок важен для новых таблиц).
   var HEADERS = [
-    'event_id', 'timestamp', 'event_type', 'event_subtype',
+    'timestamp', 'user_id', 'event_type', 'event_subtype',
     'target_glucose', 'current_glucose', 'uc', 'carbs_he', 'carbs_grams',
     'compensation_dose', 'food_insulin', 'total_raw', 'dose_down', 'dose_up',
     'selected_dose', 'rounding_choice', 'predicted_down', 'predicted_up',
     'pause_minutes', 'pen_step', 'correction_factor', 'weight',
     'glucose_2h', 'glucose_2h_timestamp', 'glucose_4h', 'glucose_4h_timestamp',
-    'notes', 'event_status', 'user_id'
+    'notes', 'timestamp_w', 'timestamp_moscow', 'event_id', 'event_status'
   ];
   // Старые названия колонок → новые (для записей, сделанных до переименования)
   var LEGACY = {
@@ -70,26 +71,49 @@
     if (isNaN(d)) return '—';
     var o = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
     if (withYear) o.year = 'numeric';
+    o.timeZone = userTz();
     return d.toLocaleString(I18N.lang === 'ru' ? 'ru-RU' : undefined, o);
   }
-  // Единый формат дат в таблице: «15.11.2026, 12:10» (местное время)
-  function stamp(d) {
-    function z(n) { return (n < 10 ? '0' : '') + n; }
-    return z(d.getDate()) + '.' + z(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + z(d.getHours()) + ':' + z(d.getMinutes());
-  }
-  function fmtTime(d) { return new Date(d).toLocaleTimeString(I18N.lang === 'ru' ? 'ru-RU' : undefined, { hour: '2-digit', minute: '2-digit' }); }
+  function fmtTime(d) { return new Date(d).toLocaleTimeString(I18N.lang === 'ru' ? 'ru-RU' : undefined, { hour: '2-digit', minute: '2-digit', timeZone: userTz() }); }
 
-  // Разбор даты события: ISO в timestamp (или старом created_at), «дд.мм.гггг, чч:мм» или серийная дата Sheets
+  // ---------------------------------------------------------------- время
+  // Опорное время — московское (timestamp, timestamp_moscow, glucose_*_timestamp): от него считает
+  // скрипт таблицы и автозаполнение замеров с сервера. timestamp_w — местное время в выбранном поясе.
+  var MSK = 'Europe/Moscow', MSK_OFFSET = 3; // Москва: UTC+3 круглый год
+  function autoTz() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || MSK; } catch (e) { return MSK; } }
+  // выбранный пояс: из настроек («auto» или IANA-имя, например Asia/Bangkok)
+  function userTz() { var z = Settings && Settings.get('tz'); return z && z !== 'auto' && validTz(z) ? z : autoTz(); }
+  function validTz(z) { try { new Intl.DateTimeFormat('en-US', { timeZone: z }); return true; } catch (e) { return false; } }
+  function partsIn(d, tz) {
+    var o = {};
+    new Intl.DateTimeFormat('en-GB', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(d).forEach(function (p) { o[p.type] = p.value; });
+    return o;
+  }
+  // «15.11.2026, 12:10» в заданном поясе (по умолчанию — московское время)
+  function stamp(d, tz) { var p = partsIn(d, tz || MSK); return p.day + '.' + p.month + '.' + p.year + ', ' + p.hour + ':' + p.minute; }
+  // смещение пояса от UTC в минутах на момент d
+  function tzOffset(d, tz) { var p = partsIn(d, tz); var w = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute); return Math.round((w - Math.floor(d.getTime() / 60000) * 60000) / 60000); }
+  function tzLabel(tz, d) {
+    var m = tzOffset(d || new Date(), tz), s = m < 0 ? '−' : '+'; m = Math.abs(m);
+    return 'UTC' + s + Math.floor(m / 60) + (m % 60 ? ':' + (m % 60 < 10 ? '0' : '') + (m % 60) : '');
+  }
+  // «дд.мм.гггг, чч:мм» → момент времени, считая строку московским временем
+  function parseMsk(s) {
+    var m = String(s || '').match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
+    return m ? new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4] - MSK_OFFSET, +m[5])) : null;
+  }
+  // серийная дата Google Sheets (таблица в московском поясе) → момент времени
+  function fromSerial(n) { return new Date(Math.round((n - 25569) * 86400000) - MSK_OFFSET * 3600000); }
+  // Время события: timestamp_moscow → timestamp → created_at (старые записи)
   function parseWhen(ev) {
-    var vals = [ev.timestamp, ev.created_at];
+    var vals = [ev.timestamp_moscow, ev.timestamp, ev.created_at];
     for (var i = 0; i < vals.length; i++) {
       var c = vals[i];
       if (c == null || c === '') continue;
-      if (typeof c === 'number') { var sd = new Date(Math.round((c - 25569) * 86400000)); return new Date(sd.getTime() + sd.getTimezoneOffset() * 60000); }
-      var s = String(c);
-      var m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
-      if (m) return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
-      if (/^\d{4}-\d{2}-\d{2}/.test(s)) { var d = new Date(s); if (!isNaN(d)) return d; }
+      if (typeof c === 'number') return fromSerial(c);
+      var d = parseMsk(c); if (d) return d;
+      if (/^\d{4}-\d{2}-\d{2}/.test(String(c))) { d = new Date(c); if (!isNaN(d)) return d; }
     }
     return null;
   }
@@ -97,7 +121,7 @@
   // ---------------------------------------------------------------- settings
   var DEFAULTS = {
     glucoseUnit: 'mmol', xeGrams: 12, carbUnit: I18N.lang === 'ru' ? 'xe' : 'g',
-    range: 2, dia: 4, name: '', notif: false,
+    range: 2, dia: 4, name: '', notif: false, tz: 'auto',
     target: '', isf: '', penStep: '', uc_breakfast: '', uc_lunch: '', uc_dinner: '', uc_snack: '', weight: ''
   };
   var Settings = {
@@ -316,16 +340,15 @@
   // Даты, записанные в другом формате (ISO «2026-11-15T12:06:22.953Z» или серийное число),
   // переписываем в таблице в единый формат «15.11.2026, 12:10». Выполняется в фоне.
   SheetStore.prototype.fixDates = function () {
-    var self = this, cols = ['timestamp', 'glucose_2h_timestamp', 'glucose_4h_timestamp'], data = [];
+    var self = this, cols = ['timestamp', 'timestamp_moscow', 'glucose_2h_timestamp', 'glucose_4h_timestamp'], data = [];
     function odd(v) { return typeof v === 'number' || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)); }
     (this.events || []).forEach(function (e) {
       if (!e._row) return;
       cols.forEach(function (c) {
         var ci = self.header.indexOf(c), v = e[c];
         if (ci < 0 || !odd(v)) return;
-        var d = typeof v === 'number' ? new Date(Math.round((v - 25569) * 86400000)) : new Date(v);
+        var d = typeof v === 'number' ? fromSerial(v) : new Date(v);
         if (isNaN(d)) return;
-        if (typeof v === 'number') d = new Date(d.getTime() + d.getTimezoneOffset() * 60000); // серийная дата — без часового пояса
         e[c] = stamp(d);
         data.push({ range: "'" + self.sheet.replace(/'/g, "''") + "'!" + colLetter(ci) + e._row, values: [[e[c]]] });
       });
@@ -668,6 +691,6 @@
     }
   };
 
-  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
+  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, userTz: userTz, autoTz: autoTz, validTz: validTz, tzLabel: tzLabel, MSK: MSK, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
   window.Settings = Settings; window.Units = Units; window.Auth = Auth; window.Store = Store; window.Shell = Shell; window.Outbox = Outbox;
 })();

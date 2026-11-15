@@ -44,10 +44,11 @@
   var STEPS = {
     menu: menu,
     meal: function () {
-      view('<p class="step-q">' + t('step.meal') + '</p><div class="grid2">' +
+      view(tzLine() + '<p class="step-q">' + t('step.meal') + '</p><div class="grid2">' +
         ['breakfast', 'lunch', 'dinner', 'correction', 'snack', 'basal'].map(function (m) {
           return '<button class="btn secondary" data-m="' + m + '">' + mealLabel(m) + '</button>';
         }).join('') + '</div>' + backBtn());
+      $('#tz-change').onclick = function () { go('tz'); };
       document.querySelectorAll('[data-m]').forEach(function (b) {
         b.onclick = function () {
           var m = b.dataset.m; S = { meal: m };
@@ -147,10 +148,38 @@
       numStep({ q: t('step.glucoseValue', { unit: Units.gLabel() }), hint: t('step.glucoseHint'), unit: Units.gLabel(), min: rg[0], max: rg[1], step: Units.isMg() ? 1 : 0.1,
         ok: function (x) { saveGlucose(Units.fromDisp(x)); } });
     },
+    // выбор часового пояса (запоминается; «Авто» — пояс устройства)
+    tz: function () {
+      var cur = Settings.get('tz') || 'auto', auto = IC.autoTz(), zones = tzList(), now = new Date();
+      var opts = '<option value="auto">' + t('tz.auto') + ': ' + esc(auto) + ' (' + IC.tzLabel(auto, now) + ')</option>' +
+        zones.map(function (z) { return '<option value="' + esc(z) + '">' + esc(z.replace(/_/g, ' ')) + ' (' + IC.tzLabel(z, now) + ')</option>'; }).join('');
+      view('<p class="step-q">' + t('tz.title') + '</p><p class="step-hint">' + t('tz.hint') + '</p>' +
+        '<select id="tz-sel" class="num-input">' + opts + '</select><div class="note small" id="tz-preview"></div>' +
+        '<div class="row">' + backBtn() + '<button class="btn primary" id="ok">' + t('btn.save') + '</button></div>');
+      var sel = $('#tz-sel'); sel.value = zones.indexOf(cur) >= 0 ? cur : 'auto';
+      function prev() { var z = sel.value === 'auto' ? auto : sel.value; $('#tz-preview').innerHTML = '🕐 ' + t('tz.local') + ': <b>' + IC.stamp(new Date(), z) + '</b><br>🇷🇺 ' + t('tz.msk') + ': <b>' + IC.stamp(new Date()) + '</b>'; }
+      sel.onchange = prev; prev();
+      $('#ok').onclick = function () { Settings.set({ tz: sel.value }); back(); };
+    },
     help: function () {
       view('<h3 style="margin-top:0;color:var(--blue)">' + t('help.title') + '</h3><div style="font-size:15px">' + t('help.body') + '</div><button class="btn primary block" onclick="calcBack()">OK</button>');
     }
   };
+
+  // строка «Время расчёта» в начале расчёта: местное время в выбранном поясе и московское
+  function tzLine() {
+    var now = new Date(), z = IC.userTz(), auto = (Settings.get('tz') || 'auto') === 'auto';
+    return '<div class="tz-line"><span>🕐 ' + t('tz.local') + ': <b>' + IC.stamp(now, z) + '</b> <span class="muted">' + esc(z.replace(/_/g, ' ')) + ', ' + IC.tzLabel(z, now) + (auto ? ', ' + t('tz.autoShort') : '') + '</span>' +
+      (z !== IC.MSK ? '<br><span class="muted">🇷🇺 ' + t('tz.msk') + ': ' + IC.stamp(now) + '</span>' : '') + '</span>' +
+      '<button class="link-btn" id="tz-change">' + t('tz.change') + '</button></div>';
+  }
+  function tzList() {
+    var z = []; try { z = Intl.supportedValuesOf('timeZone'); } catch (e) {}
+    if (!z.length) z = ['Europe/Kaliningrad', 'Europe/Moscow', 'Europe/Samara', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Yakutsk', 'Asia/Vladivostok', 'Asia/Magadan', 'Asia/Kamchatka',
+      'Europe/London', 'Europe/Berlin', 'Europe/Istanbul', 'Asia/Dubai', 'Asia/Bangkok', 'Asia/Shanghai', 'Asia/Tokyo', 'America/New_York', 'America/Los_Angeles'];
+    if (z.indexOf(IC.MSK) < 0) z.unshift(IC.MSK);
+    return z;
+  }
 
   // шаг углеводов: ХЕ / граммы переключателем + вес 1 ХЕ (9–13 г, запоминается).
   // Любой ввод пересчитывается: сохраняются и ХЕ, и граммы.
@@ -202,7 +231,10 @@
   function persistUC() { var s = {}; ['target', 'isf', 'penStep', 'carbUnit', 'xeGrams', 'uc_breakfast', 'uc_lunch', 'uc_dinner', 'uc_snack'].forEach(function (k) { s[k] = Settings.get(k); }); Settings.set(s); }
 
   function base(now, type, sub) {
-    return { event_id: Store.uid(), timestamp: stampRU(now), event_type: type, event_subtype: sub };
+    // timestamp и timestamp_moscow — московское время (от него считаются замеры через 2 и 4 ч),
+    // timestamp_w — местное время в выбранном часовом поясе
+    var msk = stampRU(now);
+    return { event_id: Store.uid(), timestamp: msk, timestamp_moscow: msk, timestamp_w: IC.stamp(now, IC.userTz()), event_type: type, event_subtype: sub };
   }
 
   function saving(on) { Shell.busy(on, t('common.saving')); }
@@ -274,7 +306,7 @@
       return p.then(function (acc) {
         var patch = {}; patch['glucose_' + l.h + 'h'] = r2(mmol); patch['glucose_' + l.h + 'h_timestamp'] = stampRU(when);
         var other = l.h === 2 ? num(l.ev.glucose_4h) : num(l.ev.glucose_2h);
-        patch.event_status = other != null ? 'complete' : (l.h === 2 ? 'pending_4h' : 'pending_2h');
+        patch.event_status = other != null ? 'completed' : (l.h === 2 ? 'pending_4h' : 'pending_2h');
         return Store.update(l.ev.event_id, patch).then(function () { Object.assign(l.ev, patch); acc.push(l); return acc; });
       });
     }, Promise.resolve([]));
@@ -364,7 +396,7 @@
           b.disabled = true; b.textContent = '…';
           var patch = {}; patch['glucose_' + r.h + 'h'] = r2(Units.fromDisp(v)); patch['glucose_' + r.h + 'h_timestamp'] = stampRU(r.target);
           var other = r.h === 2 ? num(r.ev.glucose_4h) : num(r.ev.glucose_2h);
-          patch.event_status = other != null ? 'complete' : (r.h === 2 ? 'pending_4h' : 'pending_2h');
+          patch.event_status = other != null ? 'completed' : (r.h === 2 ? 'pending_4h' : 'pending_2h');
           Store.update(r.ev.event_id, patch).then(function () {
             Object.assign(r.ev, patch); var st = self.state(); st[r.id] = { sent: true }; self.save(st);
             $('#rem-' + r.id).innerHTML = '<div class="rem-sent">' + t('rem.sent') + '</div>';
