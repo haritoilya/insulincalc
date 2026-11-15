@@ -88,7 +88,7 @@
     charts[id] = new Chart(box.querySelector('canvas'), {
       type: type, data: { labels: labels, datasets: datasets },
       options: Object.assign({ responsive: true, maintainAspectRatio: false, spanGaps: true, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: !(opts && opts.noZero), title: { display: true, text: yTitle } } } }, opts && opts.extra)
+        plugins: { legend: { position: 'top' } }, scales: Object.assign({ y: { beginAtZero: !(opts && opts.noZero), title: { display: true, text: yTitle } } }, opts && opts.scales) }, opts && opts.extra)
     });
   }
   function ds(label, data, color, extra) {
@@ -120,20 +120,29 @@
       gl.push(ds('+' + rg, rd.map(function () { return Units.toDisp(tg + rg); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
       gl.push(ds('−' + rg, rd.map(function () { return Units.toDisp(Math.max(0, tg - rg)); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
     }
-    // Скользящая средняя за 90 дней (по всем замерам таблицы, а не только за выбранный период) и GMI
-    var avg90 = Stats.rollingMean(Stats.readings(all), rd.map(function (r) { return r.t; }), 90);
-    var lastAvg = null; avg90.forEach(function (v) { if (v != null) lastAvg = v; });
-    if (lastAvg != null) {
-      gl.push(ds(t('ch.avg90') + ' · GMI ' + Stats.gmi(lastAvg).toFixed(1) + '%', avg90.map(function (v) { return v == null ? null : Units.toDisp(v); }), '#e53935',
-        { fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2.5, gmi: avg90 }));
+    // GMI по дням: для каждого дня — средняя всех замеров таблицы за 90 дней до конца этого дня
+    // (не только за выбранный период). Одна точка на день, на последнем замере дня; ось справа, %.
+    var allRd = Stats.readings(all), dayEnd = {}, lastIdx = {};
+    rd.forEach(function (r, i) {
+      var d = new Date(r.t); d.setHours(23, 59, 59, 999);
+      var k = d.getTime(); dayEnd[i] = d; lastIdx[k] = i;
+    });
+    var idxs = Object.keys(lastIdx).map(function (k) { return lastIdx[k]; }).sort(function (x, y) { return x - y; });
+    var means = Stats.rollingMean(allRd, idxs.map(function (i) { return dayEnd[i]; }), 90);
+    var gmiData = rd.map(function () { return null; }), meanData = rd.map(function () { return null; }), lastG = null;
+    idxs.forEach(function (i, j) { if (means[j] != null) { meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
+    var extraScales = {};
+    if (lastG != null) {
+      gl.push(ds(t('ch.gmi') + ' · ' + lastG.toFixed(1) + '%', gmiData, '#0d1b5e',
+        { fill: false, tension: 0.35, pointRadius: 3, pointBackgroundColor: '#0d1b5e', borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData }));
+      extraScales.y2 = { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { callback: function (v) { return v.toFixed(2); } } };
     }
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
       legend: { position: 'top' },
-      tooltip: { callbacks: { label: function (c) {
-        var s = c.dataset.label.split(' · ')[0] + ': ' + c.formattedValue;
-        var raw = c.dataset.gmi && c.dataset.gmi[c.dataIndex];
-        return raw != null ? s + ' (GMI ' + Stats.gmi(raw).toFixed(1) + '%)' : s;
-      } } } } } });
+      tooltip: { filter: function (c) { return c.raw != null; }, callbacks: { label: function (c) {
+        if (c.dataset.yAxisID === 'y2') return 'GMI: ' + c.raw.toFixed(2) + '% (' + t('ch.avg90') + ': ' + Units.g(c.dataset.mean[c.dataIndex]) + ' ' + Units.gLabel() + ')';
+        return c.dataset.label + ': ' + c.formattedValue;
+      } } } } }, scales: extraScales });
   }
 
   // ---------------------------------------------------------------- журнал
