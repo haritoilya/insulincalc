@@ -215,7 +215,7 @@
       compensation_dose: r2(c.comp), food_insulin: r2(c.food), total_raw: r2(c.total),
       dose_down: c.down, dose_up: c.up, selected_dose: dose, rounding_choice: S.choice,
       predicted_down: r2(c.predDown), predicted_up: r2(c.predUp),
-      pause_minutes: S.pause || 0, pen_step: S.penStep, correction_factor: r2(S.isf), weight: num(Settings.get('weight')),
+      pause_minutes: S.pause || 0, pen_step: S.penStep, correction_factor: r2(S.isf),
       notes: mealLabel(S.meal) + (S.meal === 'correction' ? ' (' + (S.inj === 'with_food' ? 'food' : 'no food') + ')' : ''), event_status: 'pending_2h_4h'
     });
     saving(true);
