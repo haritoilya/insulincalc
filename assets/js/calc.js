@@ -307,7 +307,7 @@
       // Шаг 'glucose' и saveGlucose оставлены в коде (не используются).
       '<div class="divider"></div><div class="row"><a class="btn report" href="/report/">' + t('menu.report') + '</a><button class="btn ghost" id="m-help">' + t('menu.help') + '</button></div>' +
       '<button class="btn ghost block" id="m-set" style="margin-top:10px">⚙️ ' + t('nav.settings') + '</button>' +
-      '<div class="recent"><h3>' + t('menu.recent') + '</h3>' + (recent.length ? recent.map(recentRow).join('') : '<p class="muted small">' + t('menu.noRecent') + '</p>') + '</div>');
+      '<div class="recent"><h3>' + t('menu.recent') + '</h3>' + (recent.length ? '<div class="recent-list">' + recent.map(recentRow).join('') + '</div>' : '<p class="muted small">' + t('menu.noRecent') + '</p>') + '</div>');
     $('#m-start').onclick = function () { S = {}; stack = ['menu']; go('meal'); };
     $('#m-help').onclick = function () { stack = ['menu']; go('help'); };
     $('#m-set').onclick = function () { Shell.openSettings(); };
@@ -321,23 +321,24 @@
     if (!items.length || !box) return;
     var fs = 14;
     function setFs() { box.style.setProperty('--recent-fs', fs + 'px'); }
-    function over() { return items.some(function (el) { var l = el.querySelector('.ri-l') || el; return el.scrollWidth > el.clientWidth + 1 || l.scrollWidth > l.clientWidth + 1; }); }
+    var list = document.querySelector('.recent-list') || box;
+    function over() { return list.scrollWidth > list.clientWidth + 1 || items.some(function (el) { var l = el.querySelector('.ri-l') || el; return l.scrollWidth > l.clientWidth + 1; }); }
     setFs();
     while (over() && fs > 10.5) { fs -= 0.5; setFs(); }
   }
   var fitTimer; window.addEventListener('resize', function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitRecent, 150); });
   // компактная строка записи: «17:23 Подколка   💉3,5 ЕД 🍞2,5 ХЕ 🩸12,4→8,1»
   function recentRow(ev) {
-    var k = Stats.kind(ev), parts = [], w = IC.parseWhen(ev);
-    var d = num(ev.selected_dose); if (d) parts.push('💉' + IC.dec(d) + ' ' + t('common.units'));
-    var xe = Units.xeOf(ev); if (xe) parts.push('🍞' + IC.dec(Math.round(xe * 10) / 10) + ' ' + t('common.xe'));
+    var k = Stats.kind(ev), parts = ['', '', ''], w = IC.parseWhen(ev);
+    var d = num(ev.selected_dose); if (d) parts[0] = '💉' + IC.dec(d) + ' ' + t('common.units');
+    var xe = Units.xeOf(ev); if (xe) parts[1] = '🍞' + IC.dec(Math.round(xe * 10) / 10) + ' ' + t('common.xe');
     var g = num(ev.current_glucose), g2 = num(ev.glucose_2h);
     // глюкоза всегда в формате «до→через 2 ч»; если замера через 2 ч ещё нет — «—»
-    if (g != null || g2 != null) parts.push('🩸' + (g != null ? dg(g) : '—') + '→' + (g2 != null ? dg(g2) : '—'));
+    if (g != null || g2 != null) parts[2] = '🩸' + (g != null ? dg(g) : '—') + '→' + (g2 != null ? dg(g2) : '—');
     var today = w && IC.fmtDate(w, true).split(',')[0] === IC.fmtDate(new Date(), true).split(',')[0];
     var when = w ? (today ? IC.fmtTime(w) : IC.fmtDate(w)) : '—';
     var label = t(KIND_LABEL[k]).replace(/^[^A-Za-zА-Яа-яЁё]+/, '').replace(/ без инсулина| without insulin/, '');
-    return '<div class="recent-item"><span class="ri-l">' + when + ' ' + esc(label) + (ev._pending ? ' <span class="pending">⏳</span>' : '') + '</span><span class="muted">' + parts.join(' ') + '</span></div>';
+    return '<div class="recent-item"><span class="ri-l">' + when + ' ' + esc(label) + (ev._pending ? ' <span class="pending">⏳</span>' : '') + '</span>' + parts.map(function (x) { return '<span class="ri-c muted">' + x + '</span>'; }).join('') + '</div>';
   }
   function dg(v) { var s = Units.g(v); return I18N.lang === 'ru' ? s.replace('.', ',') : s; }
 

@@ -94,9 +94,13 @@ h1,h2,h3{line-height:1.25}
 .done-box{background:#e8f5e9;border-radius:12px;padding:18px;margin-bottom:14px;line-height:1.7}
 .recent{margin-top:18px}
 .recent h3{font-size:15px;color:var(--muted);margin:0 0 8px}
-.recent-item{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid #f1f3f4;font-size:var(--recent-fs,14px);white-space:nowrap;overflow:hidden}
-.recent-item>span{flex:0 0 auto}
-.recent-item>.ri-l{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* «Последние записи» — таблица: название | доза | ХЕ | глюкоза до→через 2 ч. Колонки выровнены по самому
+   широкому значению, шрифт общий для всех строк (подбирается в calc.js → fitRecent) */
+.recent-list{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;column-gap:0;font-size:var(--recent-fs,14px);white-space:nowrap;overflow:hidden}
+.recent-item{display:contents}
+.recent-item>span{padding:9px 0;border-bottom:1px solid #f1f3f4}
+.recent-item>.ri-l{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ri-c{text-align:right;font-variant-numeric:tabular-nums;padding-left:.7em !important}
 .recent-item .pending{color:#e65100}
 .rem-card{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:12px;padding:16px;margin-bottom:12px}
 .rem-card .t{font-weight:700;margin-bottom:6px}
