@@ -10,18 +10,24 @@
   var DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
   var SCOPES = 'openid email profile ' + DRIVE_SCOPE;
   var MGDL = 18.0182;
+  var XE_MIN = 9, XE_MAX = 13; // допустимый вес 1 ХЕ, г
 
-  // Колонки листа «Events». Названия совпадают с полями старого виджета,
-  // поэтому старую таблицу можно подключить без переделки.
+  // Колонки листа «Events» — совпадают со структурой рабочей таблицы.
   var HEADERS = [
-    'event_id', 'created_at', 'timestamp', 'event_type', 'event_subtype',
-    'target_glucose', 'current_glucose', 'uc', 'carbs_unit', 'carbs_input_value', 'carbs_he', 'carbs_grams',
-    'compensation_dose', 'food_insulin', 'total_raw', 'dose_rounded_down', 'dose_rounded_up',
-    'selected_dose', 'rounding_choice', 'predicted_glucose_down', 'predicted_glucose_up',
-    'insulin_event_pause', 'pen_step', 'correction_factor', 'weight',
+    'event_id', 'timestamp', 'event_type', 'event_subtype',
+    'target_glucose', 'current_glucose', 'uc', 'carbs_he', 'carbs_grams',
+    'compensation_dose', 'food_insulin', 'total_raw', 'dose_down', 'dose_up',
+    'selected_dose', 'rounding_choice', 'predicted_down', 'predicted_up',
+    'pause_minutes', 'pen_step', 'correction_factor', 'weight',
     'glucose_2h', 'glucose_2h_timestamp', 'glucose_4h', 'glucose_4h_timestamp',
-    'notes', 'event_status', 'entered_by'
+    'notes', 'event_status', 'user_id'
   ];
+  // Старые названия колонок → новые (для записей, сделанных до переименования)
+  var LEGACY = {
+    dose_rounded_down: 'dose_down', dose_rounded_up: 'dose_up',
+    predicted_glucose_down: 'predicted_down', predicted_glucose_up: 'predicted_up',
+    insulin_event_pause: 'pause_minutes', entered_by: 'user_id'
+  };
 
   // ---------------------------------------------------------------- helpers
   function $(sel, root) { return (root || document).querySelector(sel); }
@@ -63,14 +69,18 @@
   }
   function fmtTime(d) { return new Date(d).toLocaleTimeString(I18N.lang === 'ru' ? 'ru-RU' : undefined, { hour: '2-digit', minute: '2-digit' }); }
 
-  // Разбор даты события: ISO в created_at или «дд.мм.гггг, чч:мм» (старый формат)
+  // Разбор даты события: ISO в timestamp (или старом created_at), «дд.мм.гггг, чч:мм» или серийная дата Sheets
   function parseWhen(ev) {
-    var c = ev.created_at;
-    if (c) { var d = new Date(c); if (!isNaN(d)) return d; }
-    var s = String(ev.timestamp || '');
-    var m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
-    if (m) return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
-    if (typeof c === 'number') return new Date(Math.round((c - 25569) * 86400000)); // серийная дата Sheets
+    var vals = [ev.timestamp, ev.created_at];
+    for (var i = 0; i < vals.length; i++) {
+      var c = vals[i];
+      if (c == null || c === '') continue;
+      if (typeof c === 'number') return new Date(Math.round((c - 25569) * 86400000));
+      var s = String(c);
+      var m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
+      if (m) return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) { var d = new Date(s); if (!isNaN(d)) return d; }
+    }
     return null;
   }
 
@@ -102,11 +112,12 @@
     isfToDisp: function (v) { if (v == null) return null; return this.isMg() ? Math.round(v * MGDL) : Math.round(v * 100) / 100; },
     isfFromDisp: function (v) { if (v == null) return null; return this.isMg() ? v / MGDL : v; },
     isfLabel: function () { return this.gLabel() + '/' + t('common.units'); },
-    xeG: function () { return num(Settings.get('xeGrams')) || 12; },
+    xeG: function () { var g = num(Settings.get('xeGrams')); return g != null && g >= XE_MIN && g <= XE_MAX ? g : 12; },
     // ХЕ события с учётом настроек (граммы — первичны)
+    // ХЕ события: carbs_he записан с тем весом ХЕ, который был при вводе; иначе — из граммов
     xeOf: function (ev) {
+      var he = num(ev.carbs_he); if (he != null) return he;
       var g = num(ev.carbs_grams);
-      if (g == null) { var he = num(ev.carbs_he); if (he != null) g = he * 12; }
       return g == null ? 0 : g / this.xeG();
     }
   };
@@ -261,6 +272,7 @@
   function rowToEvent(header, row, idx) {
     var ev = { _row: idx };
     header.forEach(function (h, i) { if (h) ev[h] = row[i] === '' ? null : row[i]; });
+    Object.keys(LEGACY).forEach(function (k) { if (ev[k] != null && ev[LEGACY[k]] == null) ev[LEGACY[k]] = ev[k]; });
     return ev;
   }
   function eventToRow(header, ev) { return header.map(function (h) { var v = ev[h]; return v === undefined || v === null ? '' : v; }); }
@@ -286,7 +298,7 @@
     return api(SHEETS + this.id + '/values/' + rng(this.sheet, 'A1:AZ') + '?valueRenderOption=UNFORMATTED_VALUE').then(function (r) {
       var v = r.values || [];
       self.header = v[0] || HEADERS.slice();
-      self.events = v.slice(1).map(function (row, i) { return rowToEvent(self.header, row, i + 2); }).filter(function (e) { return e.event_id || e.created_at || e.timestamp; });
+      self.events = v.slice(1).map(function (row, i) { return rowToEvent(self.header, row, i + 2); }).filter(function (e) { return e.event_id || e.timestamp || e.created_at; });
       return Outbox.merge(self.events);
     });
   };
@@ -373,7 +385,7 @@
     current: null,
     events: function (force) { return Store.current.listEvents(force); },
     append: function (ev) {
-      ev.entered_by = ev.entered_by || ((Auth.user() || {}).email || '');
+      ev.user_id = ev.user_id || ((Auth.user() || {}).email || '');
       return Store.current.append(ev).catch(function (e) {
         Outbox.push({ op: 'append', ev: ev }); Shell.handleError(e, true); return ev;
       });
@@ -561,18 +573,18 @@
         '<label>' + t('settings.lang') + '<select name="lang"><option value="ru">Русский</option><option value="en">English</option></select></label>' +
         '<label>' + t('settings.glucoseUnit') + '<select name="glucoseUnit"><option value="mmol">mmol/L (ммоль/л)</option><option value="mgdl">mg/dL (мг/дл)</option></select></label>' +
         '<label>' + t('settings.carbUnit') + '<select name="carbUnit"><option value="xe">' + t('common.xe') + '</option><option value="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</option></select></label>' +
-        '<label>' + t('settings.xeGrams') + '<select name="xeGrams"><option value="12">12</option><option value="10">10</option><option value="15">15</option></select></label>' +
+        '<label>' + t('settings.xeGrams') + '<input name="xeGrams" type="number" step="0.5" min="' + XE_MIN + '" max="' + XE_MAX + '"></label>' +
         '<label>' + t('settings.range') + '<input name="range" type="number" step="0.1" min="0.5" max="5"></label>' +
         '<label>' + t('settings.dia') + '<input name="dia" type="number" step="0.5" min="2" max="8"></label>' +
         '<label>' + t('settings.name') + '<input name="name" type="text" maxlength="40"></label>' +
         '<label class="check"><input name="notif" type="checkbox"> ' + t('settings.notifOn') + '</label>' +
         '<button class="btn primary block" type="submit">' + t('btn.save') + '</button></form>');
       var f = m.querySelector('#set-form');
-      f.lang.value = I18N.lang; f.glucoseUnit.value = s.glucoseUnit; f.carbUnit.value = s.carbUnit; f.xeGrams.value = String(s.xeGrams);
+      f.lang.value = I18N.lang; f.glucoseUnit.value = s.glucoseUnit; f.carbUnit.value = s.carbUnit; f.xeGrams.value = Units.xeG();
       f.range.value = s.range; f.dia.value = s.dia; f.name.value = s.name || ''; f.notif.checked = !!s.notif;
       f.onsubmit = function (e) {
         e.preventDefault();
-        var o = { glucoseUnit: f.glucoseUnit.value, carbUnit: f.carbUnit.value, xeGrams: +f.xeGrams.value, range: num(f.range.value) || 2, dia: num(f.dia.value) || 4, name: f.name.value.trim(), notif: f.notif.checked };
+        var o = { glucoseUnit: f.glucoseUnit.value, carbUnit: f.carbUnit.value, xeGrams: Math.min(XE_MAX, Math.max(XE_MIN, num(f.xeGrams.value) || 12)), range: num(f.range.value) || 2, dia: num(f.dia.value) || 4, name: f.name.value.trim(), notif: f.notif.checked };
         if (o.notif && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
         Settings.set(o);
         var langChanged = f.lang.value !== I18N.lang;
@@ -619,6 +631,6 @@
     }
   };
 
-  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, HEADERS: HEADERS, MGDL: MGDL };
+  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
   window.Settings = Settings; window.Units = Units; window.Auth = Auth; window.Store = Store; window.Shell = Shell; window.Outbox = Outbox;
 })();

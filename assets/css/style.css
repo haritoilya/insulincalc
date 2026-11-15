@@ -202,3 +202,6 @@ footer.site a{color:#e8eaed}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media print{.topbar,.controls,.actions,.demo-bar,.tabs{display:none!important}body{background:#fff}.card{box-shadow:none}}
+.xeg-row{display:flex;align-items:center;gap:8px;margin:0 0 12px;flex-wrap:wrap;font-size:15px;color:var(--muted)}
+.xeg-row .xeg-input{width:90px;font-size:18px;padding:6px 10px}
+.xeg-row .input-unit{position:static;transform:none}

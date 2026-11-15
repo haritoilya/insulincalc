@@ -23,7 +23,7 @@
 
 ## Схема листа `Events`
 
-Колонки совпадают с полями старого виджета (`event_id, created_at, timestamp, event_type, event_subtype, target_glucose, current_glucose, uc, carbs_*, compensation_dose, food_insulin, total_raw, dose_rounded_*, selected_dose, … glucose_2h, glucose_4h, event_status, entered_by`).
+Колонки листа `Events`: `event_id, timestamp, event_type, event_subtype, target_glucose, current_glucose, uc, carbs_he, carbs_grams, compensation_dose, food_insulin, total_raw, dose_down, dose_up, selected_dose, rounding_choice, predicted_down, predicted_up, pause_minutes, pen_step, correction_factor, weight, glucose_2h, glucose_2h_timestamp, glucose_4h, glucose_4h_timestamp, notes, event_status, user_id`. `timestamp` — время в ISO (UTC). Углеводы всегда сохраняются и в ХЕ, и в граммах с учётом настройки «Количество грамм в 1 ХЕ» (9–13 г). Старые записи с прежними названиями колонок (`created_at`, `dose_rounded_*`, `predicted_glucose_*`, `insulin_event_pause`, `entered_by`) читаются автоматически.
 Глюкоза хранится в ммоль/л, углеводы — в граммах (и ХЕ). Лист `Settings` — настройки (ключ/значение).
 
 ## Локальный запуск

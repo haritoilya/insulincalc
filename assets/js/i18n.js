@@ -43,7 +43,7 @@
 
       'settings.title': 'Настройки',
       'settings.glucoseUnit': 'Единицы глюкозы',
-      'settings.xeGrams': 'Сколько граммов углеводов в 1 ХЕ',
+      'settings.xeGrams': 'Количество грамм в 1 ХЕ (9–13)',
       'settings.carbUnit': 'Углеводы по умолчанию',
       'settings.range': 'Допуск «в цели» после еды (± ммоль/л)',
       'settings.dia': 'Длительность действия болюсного инсулина (часы)',
@@ -75,6 +75,7 @@
       'step.target': '🎯 Целевой уровень глюкозы ({unit})',
       'step.carbs': '🍞 Сколько углеводов?',
       'step.carbsHint': '1 ХЕ = {g} г углеводов',
+      'step.xeGrams': 'Количество грамм в 1 ХЕ',
       'step.pen': '💉 Шаг дозировки ручки / помпы',
       'step.isf': '📉 ФЧИ — на сколько {unit} снижает 1 ЕД',
       'step.current': '🩸 Текущий уровень глюкозы ({unit})',
@@ -196,7 +197,7 @@
 
       'settings.title': 'Settings',
       'settings.glucoseUnit': 'Glucose units',
-      'settings.xeGrams': 'Grams of carbs in 1 carb unit (CU/XE)',
+      'settings.xeGrams': 'Grams of carbs in 1 carb unit (CU/XE), 9–13',
       'settings.carbUnit': 'Default carb input',
       'settings.range': 'Post-meal “in target” tolerance (± mmol/L)',
       'settings.dia': 'Bolus insulin duration of action (hours)',
@@ -228,6 +229,7 @@
       'step.target': '🎯 Target glucose ({unit})',
       'step.carbs': '🍞 How many carbs?',
       'step.carbsHint': '1 CU = {g} g of carbs',
+      'step.xeGrams': 'Grams of carbs in 1 CU',
       'step.pen': '💉 Pen / pump dose step',
       'step.isf': '📉 Correction factor — how many {unit} 1 U lowers',
       'step.current': '🩸 Current glucose ({unit})',

@@ -61,7 +61,7 @@
     inj: function () {
       view('<p class="step-q">' + t('step.injType') + '</p><div class="grid1">' +
         '<button class="btn secondary" id="nf">' + t('inj.noFood') + '</button><button class="btn secondary" id="wf">' + t('inj.withFood') + '</button></div>' + backBtn());
-      $('#nf').onclick = function () { S.inj = 'no_food'; S.uc = 0; S.carbsG = 0; go('target'); };
+      $('#nf').onclick = function () { S.inj = 'no_food'; S.uc = 0; S.carbsG = 0; S.carbsHe = 0; go('target'); };
       $('#wf').onclick = function () { S.inj = 'with_food'; go('uc'); };
     },
     weight: function () {
@@ -112,7 +112,7 @@
       if (S.meal === 'correction') L.push('<b>' + t('sum.type') + ':</b> ' + (S.inj === 'with_food' ? t('inj.withFood') : t('inj.noFood')));
       if (S.carbsG > 0) {
         L.push('<b>' + t('sum.uc') + ':</b> ' + S.uc + ' ' + t('common.units') + '/' + t('common.xe'));
-        L.push('<b>' + t('sum.carbs') + ':</b> ' + (S.carbsG / Units.xeG()).toFixed(1) + ' ' + t('common.xe') + ' (' + Math.round(S.carbsG) + ' ' + t('common.g') + ')');
+        L.push('<b>' + t('sum.carbs') + ':</b> ' + S.carbsHe.toFixed(1) + ' ' + t('common.xe') + ' (' + Math.round(S.carbsG) + ' ' + t('common.g') + ', 1 ' + t('common.xe') + ' = ' + S.xeG + ' ' + t('common.g') + ')');
       }
       L.push('<b>' + t('sum.target') + ':</b> ' + Units.g(S.target) + ' ' + Units.gLabel());
       L.push('<b>' + t('sum.pen') + ':</b> ' + S.penStep + ' ' + t('common.units'));
@@ -125,7 +125,7 @@
       var c = S.calc, u = t('common.units');
       var html = '<div class="result-box"><b>' + t('res.title') + '</b> — ' + mealLabel(S.meal) + '<br>' +
         '🩸 ' + Units.g(S.current) + ' → 🎯 ' + Units.g(S.target) + ' ' + Units.gLabel() + '<br><br><b>' + t('res.details') + ':</b><br>';
-      if (S.carbsG > 0) html += '• ' + Math.round(S.carbsG) + ' ' + t('common.g') + ' (' + (S.carbsG / Units.xeG()).toFixed(1) + ' ' + t('common.xe') + ') × ' + S.uc + ' → ' + t('res.food') + ': ' + c.food.toFixed(2) + ' ' + u + '<br>';
+      if (S.carbsG > 0) html += '• ' + S.carbsHe.toFixed(1) + ' ' + t('common.xe') + ' (' + Math.round(S.carbsG) + ' ' + t('common.g') + ') × ' + S.uc + ' → ' + t('res.food') + ': ' + c.food.toFixed(2) + ' ' + u + '<br>';
       html += '• ' + t('res.corr') + ': ' + c.comp.toFixed(2) + ' ' + u + '<br>• ' + t('res.total') + ': <b>' + c.total.toFixed(2) + ' ' + u + '</b> (' + t('sum.pen').toLowerCase() + ' ' + S.penStep + ')' +
         '<div class="dose-cards"><div class="dose-card down"><div class="small">' + t('res.down') + '</div><div class="d">' + c.down.toFixed(1) + ' ' + u + '</div><div class="small muted">' + t('res.forecast') + ': ' + Units.g(c.predDown) + '</div></div>' +
         '<div class="dose-card up"><div class="small">' + t('res.up') + '</div><div class="d">' + c.up.toFixed(1) + ' ' + u + '</div><div class="small muted">' + t('res.forecast') + ': ' + Units.g(c.predUp) + '</div></div></div></div>';
@@ -152,25 +152,33 @@
     }
   };
 
-  // шаг углеводов: ХЕ / граммы переключателем
+  // шаг углеводов: ХЕ / граммы переключателем + вес 1 ХЕ (9–13 г, запоминается).
+  // Любой ввод пересчитывается: сохраняются и ХЕ, и граммы.
   function carbsStep(next) {
     var unit = Settings.get('carbUnit') || 'xe';
     function maxV() { return unit === 'xe' ? 40 : 400; }
+    var xeRow = '<div class="xeg-row"><label for="xeg">' + t('step.xeGrams') + '</label>' +
+      '<input class="num-input xeg-input" id="xeg" type="number" inputmode="decimal" step="0.5" min="' + IC.XE_MIN + '" max="' + IC.XE_MAX + '" value="' + Units.xeG() + '">' +
+      '<span class="input-unit">' + t('common.g') + '</span></div>';
     numStep({
-      q: t('step.carbs'), hint: t('step.carbsHint', { g: Units.xeG() }),
-      extra: '<div class="seg"><button data-u="xe">' + t('common.xe') + '</button><button data-u="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</button></div>',
+      q: t('step.carbs'),
+      extra: '<div class="seg"><button data-u="xe">' + t('common.xe') + '</button><button data-u="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</button></div>' + xeRow,
       unit: unit === 'xe' ? t('common.xe') : t('common.g'), min: 0.1, max: maxV,
       ok: function (x) {
-        S.carbUnit = unit; S.carbsInput = x; S.carbsG = unit === 'xe' ? x * Units.xeG() : x;
-        Settings.set({ carbUnit: unit }, false); next();
+        var xg = num($('#xeg').value);
+        if (xg == null || xg < IC.XE_MIN || xg > IC.XE_MAX) { $('#err').textContent = t('step.xeGrams') + ': ' + t('err.range', { min: IC.XE_MIN, max: IC.XE_MAX }); $('#xeg').focus(); return; }
+        S.carbUnit = unit; S.xeG = xg;
+        if (unit === 'xe') { S.carbsHe = x; S.carbsG = x * xg; } else { S.carbsG = x; S.carbsHe = x / xg; }
+        Settings.set({ carbUnit: unit, xeGrams: xg }, false); next();
       },
       after: function (v) {
         function paint() {
           v.querySelectorAll('[data-u]').forEach(function (b) { b.classList.toggle('on', b.dataset.u === unit); });
-          var u = v.querySelector('.input-unit'); if (u) u.textContent = unit === 'xe' ? t('common.xe') : t('common.g');
+          var u = v.querySelector('.input-wrap .input-unit'); if (u) u.textContent = unit === 'xe' ? t('common.xe') : t('common.g');
           v.querySelector('#num').max = maxV();
         }
         v.querySelectorAll('[data-u]').forEach(function (b) { b.onclick = function () { unit = b.dataset.u; paint(); v.querySelector('#num').focus(); }; });
+        v.querySelector('#xeg').addEventListener('keydown', function (e) { if (e.key === 'Enter') v.querySelector('#ok').click(); });
         paint();
       }
     });
@@ -179,7 +187,7 @@
   // ---------------------------------------------------------------- расчёт (формула из исходного виджета)
   function compute() {
     var comp = Math.max(0, (S.current - S.target) / S.isf);
-    var food = (S.carbsG || 0) * (S.uc || 0) / Units.xeG();
+    var food = (S.carbsHe || 0) * (S.uc || 0);
     var total = comp + food, st = S.penStep;
     var k = total / st;
     var down = Math.round(Math.floor(k + 1e-9) * st * 100) / 100, up = Math.round(Math.ceil(k - 1e-9) * st * 100) / 100;
@@ -192,10 +200,10 @@
   function subtype() { if (S.meal === 'correction') return S.inj === 'with_food' ? 'correction_with_food' : 'correction_only'; return S.meal; }
 
   // ---------------------------------------------------------------- сохранение
-  function persistUC() { var s = {}; ['target', 'isf', 'penStep', 'carbUnit', 'uc_breakfast', 'uc_lunch', 'uc_dinner', 'uc_snack'].forEach(function (k) { s[k] = Settings.get(k); }); Settings.set(s); }
+  function persistUC() { var s = {}; ['target', 'isf', 'penStep', 'carbUnit', 'xeGrams', 'uc_breakfast', 'uc_lunch', 'uc_dinner', 'uc_snack'].forEach(function (k) { s[k] = Settings.get(k); }); Settings.set(s); }
 
   function base(now, type, sub) {
-    return { event_id: Store.uid(), created_at: now.toISOString(), timestamp: stampRU(now), event_type: type, event_subtype: sub };
+    return { event_id: Store.uid(), timestamp: now.toISOString(), event_type: type, event_subtype: sub };
   }
 
   function saving(on) { Shell.busy(on, t('common.saving')); }
@@ -204,12 +212,11 @@
     var now = new Date(), c = S.calc, dose = S.choice === 'down' ? c.down : c.up;
     var ev = Object.assign(base(now, 'insulin_calculation', subtype()), {
       target_glucose: r2(S.target), current_glucose: r2(S.current), uc: S.uc || null,
-      carbs_unit: S.carbsG ? (S.carbUnit === 'xe' ? 'he' : 'grams') : null, carbs_input_value: S.carbsG ? S.carbsInput : null,
-      carbs_he: S.carbsG ? r2(S.carbsG / Units.xeG()) : null, carbs_grams: S.carbsG ? r2(S.carbsG) : null,
+      carbs_he: S.carbsG ? r2(S.carbsHe) : null, carbs_grams: S.carbsG ? r2(S.carbsG) : null,
       compensation_dose: r2(c.comp), food_insulin: r2(c.food), total_raw: r2(c.total),
-      dose_rounded_down: c.down, dose_rounded_up: c.up, selected_dose: dose, rounding_choice: S.choice,
-      predicted_glucose_down: r2(c.predDown), predicted_glucose_up: r2(c.predUp),
-      insulin_event_pause: S.pause || 0, pen_step: S.penStep, correction_factor: r2(S.isf), weight: num(Settings.get('weight')),
+      dose_down: c.down, dose_up: c.up, selected_dose: dose, rounding_choice: S.choice,
+      predicted_down: r2(c.predDown), predicted_up: r2(c.predUp),
+      pause_minutes: S.pause || 0, pen_step: S.penStep, correction_factor: r2(S.isf), weight: num(Settings.get('weight')),
       notes: mealLabel(S.meal) + (S.meal === 'correction' ? ' (' + (S.inj === 'with_food' ? 'food' : 'no food') + ')' : ''), event_status: 'pending_2h_4h'
     });
     saving(true);
@@ -239,12 +246,12 @@
   function saveSnack() {
     var now = new Date();
     var ev = Object.assign(base(now, 'snack_no_insulin', 'snack'), {
-      carbs_unit: S.carbUnit === 'xe' ? 'he' : 'grams', carbs_input_value: S.carbsInput, carbs_he: r2(S.carbsG / Units.xeG()), carbs_grams: r2(S.carbsG),
+      carbs_he: r2(S.carbsHe), carbs_grams: r2(S.carbsG),
       notes: mealLabel('snack'), event_status: 'done' });
     saving(true);
     Store.append(ev).then(function () {
       events.push(ev); saving(false);
-      done('<b>' + t('done.snack') + '</b><br>🍞 ' + (S.carbsG / Units.xeG()).toFixed(1) + ' ' + t('common.xe') + ' (' + Math.round(S.carbsG) + ' ' + t('common.g') + ')<br>🕐 ' + IC.fmtDate(now) + '<br>' + t('done.measure').replace(' и 4', '').replace(' and 4', ''));
+      done('<b>' + t('done.snack') + '</b><br>🍞 ' + S.carbsHe.toFixed(1) + ' ' + t('common.xe') + ' (' + Math.round(S.carbsG) + ' ' + t('common.g') + ')<br>🕐 ' + IC.fmtDate(now) + '<br>' + t('done.measure').replace(' и 4', '').replace(' and 4', ''));
     });
   }
 
