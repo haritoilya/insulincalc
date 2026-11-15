@@ -46,9 +46,14 @@
   }
   function num(v) {
     if (v === null || v === undefined || v === '') return null;
-    var n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+    if (typeof v === 'number') return isFinite(v) ? v : null;
+    var str = String(v).trim().replace(/\s/g, '').replace(',', '.');
+    if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(str)) return null;
+    var n = parseFloat(str);
     return isFinite(n) ? n : null;
   }
+  // число для поля ввода: в русском интерфейсе — с запятой (ввести можно и точку, и запятую)
+  function dec(v) { var n = num(v); if (n == null) return v == null ? '' : String(v); var s = String(Math.round(n * 1000) / 1000); return I18N.lang === 'ru' ? s.replace('.', ',') : s; }
   function uid() { return 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11); }
   function loadScript(src) {
     return new Promise(function (res, rej) {
@@ -67,6 +72,11 @@
     if (withYear) o.year = 'numeric';
     return d.toLocaleString(I18N.lang === 'ru' ? 'ru-RU' : undefined, o);
   }
+  // Единый формат дат в таблице: «15.11.2026, 12:10» (местное время)
+  function stamp(d) {
+    function z(n) { return (n < 10 ? '0' : '') + n; }
+    return z(d.getDate()) + '.' + z(d.getMonth() + 1) + '.' + d.getFullYear() + ', ' + z(d.getHours()) + ':' + z(d.getMinutes());
+  }
   function fmtTime(d) { return new Date(d).toLocaleTimeString(I18N.lang === 'ru' ? 'ru-RU' : undefined, { hour: '2-digit', minute: '2-digit' }); }
 
   // Разбор даты события: ISO в timestamp (или старом created_at), «дд.мм.гггг, чч:мм» или серийная дата Sheets
@@ -75,7 +85,7 @@
     for (var i = 0; i < vals.length; i++) {
       var c = vals[i];
       if (c == null || c === '') continue;
-      if (typeof c === 'number') return new Date(Math.round((c - 25569) * 86400000));
+      if (typeof c === 'number') { var sd = new Date(Math.round((c - 25569) * 86400000)); return new Date(sd.getTime() + sd.getTimezoneOffset() * 60000); }
       var s = String(c);
       var m = s.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
       if (m) return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
@@ -299,8 +309,29 @@
       var v = r.values || [];
       self.header = v[0] || HEADERS.slice();
       self.events = v.slice(1).map(function (row, i) { return rowToEvent(self.header, row, i + 2); }).filter(function (e) { return e.event_id || e.timestamp || e.created_at; });
+      self.fixDates();
       return Outbox.merge(self.events);
     });
+  };
+  // Даты, записанные в другом формате (ISO «2026-11-15T12:06:22.953Z» или серийное число),
+  // переписываем в таблице в единый формат «15.11.2026, 12:10». Выполняется в фоне.
+  SheetStore.prototype.fixDates = function () {
+    var self = this, cols = ['timestamp', 'glucose_2h_timestamp', 'glucose_4h_timestamp'], data = [];
+    function odd(v) { return typeof v === 'number' || (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)); }
+    (this.events || []).forEach(function (e) {
+      if (!e._row) return;
+      cols.forEach(function (c) {
+        var ci = self.header.indexOf(c), v = e[c];
+        if (ci < 0 || !odd(v)) return;
+        var d = typeof v === 'number' ? new Date(Math.round((v - 25569) * 86400000)) : new Date(v);
+        if (isNaN(d)) return;
+        if (typeof v === 'number') d = new Date(d.getTime() + d.getTimezoneOffset() * 60000); // серийная дата — без часового пояса
+        e[c] = stamp(d);
+        data.push({ range: "'" + self.sheet.replace(/'/g, "''") + "'!" + colLetter(ci) + e._row, values: [[e[c]]] });
+      });
+    });
+    if (!data.length) return;
+    api(SHEETS + this.id + '/values:batchUpdate', { method: 'POST', body: { valueInputOption: 'RAW', data: data } }).catch(function (e) { console.warn('fixDates', e); });
   };
   SheetStore.prototype.append = function (ev) {
     var self = this;
@@ -579,15 +610,15 @@
         '<label>' + t('settings.lang') + '<select name="lang"><option value="ru">Русский</option><option value="en">English</option></select></label>' +
         '<label>' + t('settings.glucoseUnit') + '<select name="glucoseUnit"><option value="mmol">mmol/L (ммоль/л)</option><option value="mgdl">mg/dL (мг/дл)</option></select></label>' +
         '<label>' + t('settings.carbUnit') + '<select name="carbUnit"><option value="xe">' + t('common.xe') + '</option><option value="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</option></select></label>' +
-        '<label>' + t('settings.xeGrams') + '<input name="xeGrams" type="number" step="0.5" min="' + XE_MIN + '" max="' + XE_MAX + '"></label>' +
-        '<label>' + t('settings.range') + '<input name="range" type="number" step="0.1" min="0.5" max="5"></label>' +
-        '<label>' + t('settings.dia') + '<input name="dia" type="number" step="0.5" min="2" max="8"></label>' +
+        '<label>' + t('settings.xeGrams') + '<input name="xeGrams" type="text" inputmode="decimal"></label>' +
+        '<label>' + t('settings.range') + '<input name="range" type="text" inputmode="decimal"></label>' +
+        '<label>' + t('settings.dia') + '<input name="dia" type="text" inputmode="decimal"></label>' +
         '<label>' + t('settings.name') + '<input name="name" type="text" maxlength="40"></label>' +
         '<label class="check"><input name="notif" type="checkbox"> ' + t('settings.notifOn') + '</label>' +
         '<button class="btn primary block" type="submit">' + t('btn.save') + '</button></form>');
       var f = m.querySelector('#set-form');
-      f.lang.value = I18N.lang; f.glucoseUnit.value = s.glucoseUnit; f.carbUnit.value = s.carbUnit; f.xeGrams.value = Units.xeG();
-      f.range.value = s.range; f.dia.value = s.dia; f.name.value = s.name || ''; f.notif.checked = !!s.notif;
+      f.lang.value = I18N.lang; f.glucoseUnit.value = s.glucoseUnit; f.carbUnit.value = s.carbUnit; f.xeGrams.value = dec(Units.xeG());
+      f.range.value = dec(s.range); f.dia.value = dec(s.dia); f.name.value = s.name || ''; f.notif.checked = !!s.notif;
       f.onsubmit = function (e) {
         e.preventDefault();
         var o = { glucoseUnit: f.glucoseUnit.value, carbUnit: f.carbUnit.value, xeGrams: Math.min(XE_MAX, Math.max(XE_MIN, num(f.xeGrams.value) || 12)), range: num(f.range.value) || 2, dia: num(f.dia.value) || 4, name: f.name.value.trim(), notif: f.notif.checked };
@@ -637,6 +668,6 @@
     }
   };
 
-  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
+  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
   window.Settings = Settings; window.Units = Units; window.Auth = Auth; window.Store = Store; window.Shell = Shell; window.Outbox = Outbox;
 })();

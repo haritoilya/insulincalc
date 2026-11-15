@@ -6,14 +6,16 @@
   var H = 3600000;
 
   var MEAL_MAP = { 'завтрак': 'breakfast', 'breakfast': 'breakfast', 'обед': 'lunch', 'lunch': 'lunch', 'ужин': 'dinner', 'dinner': 'dinner',
-    'correction_only': 'corr', 'correction_with_food': 'corrFood', 'night': 'basal', 'snack': 'snack' };
+    'correction_only': 'corr', 'correction_with_food': 'corrFood', 'night': 'basal', 'snack': 'snack', 'перекус': 'snack' };
 
+  // «Завтрак», «🍳 завтрак», «Breakfast », «BREAKFAST» → одно и то же значение
+  function mealKey(v) { return String(v == null ? '' : v).toLowerCase().replace(/ё/g, 'е').replace(/[^a-zа-я_]/g, ''); }
   function kind(ev) {
-    var tp = String(ev.event_type || ''), sub = String(ev.event_subtype || '').toLowerCase().trim();
+    var tp = String(ev.event_type || '').toLowerCase().trim(), sub = mealKey(ev.event_subtype);
     if (tp === 'basal_insulin') return 'basal';
     if (tp === 'snack_no_insulin') return 'snack';
     if (tp === 'glucose_measurement') return 'glucose';
-    if (tp === 'insulin_calculation') return MEAL_MAP[sub] || 'other';
+    if (tp === 'insulin_calculation' || !tp) return MEAL_MAP[sub] || 'other';
     return 'other';
   }
   function isBolus(ev) { return String(ev.event_type) === 'insulin_calculation' && (num(ev.selected_dose) || 0) > 0; }

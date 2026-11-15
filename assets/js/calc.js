@@ -7,7 +7,7 @@
   var S = {}, stack = [], events = [];
 
   function view(html) { var v = $('#view'); v.innerHTML = '<div class="step">' + html + '</div>'; $('#reminders').style.display = 'none'; window.scrollTo({ top: 0, behavior: 'smooth' }); return v; }
-  function stampRU(d) { return d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  var stampRU = IC.stamp;
   function r2(v) { return v == null ? null : Math.round(v * 100) / 100; }
   function mealLabel(m) { return t('meal.' + m); }
   var KIND_LABEL = { breakfast: 'meal.breakfast', lunch: 'meal.lunch', dinner: 'meal.dinner', corr: 'meal.correction', corrFood: 'meal.correction', snack: 'meal.snack', basal: 'meal.basal', glucose: 'meal.glucose', other: 'meal.correction' };
@@ -21,11 +21,11 @@
   // ---------------------------------------------------------------- универсальный шаг с числом
   function numStep(o) {
     var v = view('<p class="step-q">' + o.q + '</p>' + (o.hint ? '<p class="step-hint">' + o.hint + '</p>' : '') + (o.extra || '') +
-      '<div class="input-wrap"><input class="num-input" id="num" type="number" inputmode="decimal" step="' + (o.step || 0.1) + '" min="' + o.min + '" max="' + o.max + '" autocomplete="off">' +
+      '<div class="input-wrap"><input class="num-input" id="num" type="text" inputmode="decimal" autocomplete="off">' +
       (o.unit ? '<span class="input-unit">' + o.unit + '</span>' : '') + '</div><div class="err" id="err"></div>' +
       '<div class="row">' + backBtn() + (o.skip ? '<button class="btn secondary" id="skip">' + t('btn.skip') + '</button>' : '') + '<button class="btn primary" id="ok">' + t('btn.next') + '</button></div>');
     var inp = $('#num');
-    if (o.prefill != null && o.prefill !== '') inp.value = o.prefill;
+    if (o.prefill != null && o.prefill !== '') inp.value = IC.dec(o.prefill);
     setTimeout(function () { inp.focus(); inp.select(); }, 80);
     function ok() {
       var x = num(inp.value), min = typeof o.min === 'function' ? o.min() : o.min, max = typeof o.max === 'function' ? o.max() : o.max;
@@ -158,7 +158,7 @@
     var unit = Settings.get('carbUnit') || 'xe';
     function maxV() { return unit === 'xe' ? 40 : 400; }
     var xeRow = '<div class="xeg-row"><label for="xeg">' + t('step.xeGrams') + '</label>' +
-      '<input class="num-input xeg-input" id="xeg" type="number" inputmode="decimal" step="0.5" min="' + IC.XE_MIN + '" max="' + IC.XE_MAX + '" value="' + Units.xeG() + '">' +
+      '<input class="num-input xeg-input" id="xeg" type="text" inputmode="decimal" value="' + IC.dec(Units.xeG()) + '">' +
       '<span class="input-unit">' + t('common.g') + '</span></div>';
     numStep({
       q: t('step.carbs'),
@@ -175,8 +175,7 @@
         function paint() {
           v.querySelectorAll('[data-u]').forEach(function (b) { b.classList.toggle('on', b.dataset.u === unit); });
           var u = v.querySelector('.input-wrap .input-unit'); if (u) u.textContent = unit === 'xe' ? t('common.xe') : t('common.g');
-          v.querySelector('#num').max = maxV();
-        }
+                  }
         v.querySelectorAll('[data-u]').forEach(function (b) { b.onclick = function () { unit = b.dataset.u; paint(); v.querySelector('#num').focus(); }; });
         v.querySelector('#xeg').addEventListener('keydown', function (e) { if (e.key === 'Enter') v.querySelector('#ok').click(); });
         paint();
@@ -203,7 +202,7 @@
   function persistUC() { var s = {}; ['target', 'isf', 'penStep', 'carbUnit', 'xeGrams', 'uc_breakfast', 'uc_lunch', 'uc_dinner', 'uc_snack'].forEach(function (k) { s[k] = Settings.get(k); }); Settings.set(s); }
 
   function base(now, type, sub) {
-    return { event_id: Store.uid(), timestamp: now.toISOString(), event_type: type, event_subtype: sub };
+    return { event_id: Store.uid(), timestamp: stampRU(now), event_type: type, event_subtype: sub };
   }
 
   function saving(on) { Shell.busy(on, t('common.saving')); }
@@ -353,7 +352,7 @@
       box.innerHTML = due.map(function (r) {
         return '<div class="rem-card" id="rem-' + r.id + '"><div class="t">' + t('rem.title', { h: r.h }) + '</div><div class="d">📅 ' + t('rem.inj') + ': ' + IC.fmtDate(IC.parseWhen(r.ev)) +
           ' · ' + t(KIND_LABEL[Stats.kind(r.ev)]) + '<br>🎯 ' + t('rem.at') + ': ' + IC.fmtTime(r.target) + '</div>' +
-          '<input type="number" inputmode="decimal" step="0.1" placeholder="' + Units.gLabel() + '" data-in="' + r.id + '">' +
+          '<input type="text" inputmode="decimal" placeholder="' + Units.gLabel() + '" data-in="' + r.id + '">' +
           '<div class="a"><button class="send" data-send="' + r.id + '">' + t('rem.send') + '</button><button class="sn" data-snz="' + r.id + '">' + t('rem.snooze') + '</button><button class="sn" data-skip="' + r.id + '">' + t('rem.skip') + '</button></div></div>';
       }).join('');
       var self = this;
