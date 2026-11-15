@@ -7,7 +7,7 @@
     { "source": "/calc", "destination": "/app/", "permanent": true },
     { "source": "/ru", "destination": "/", "permanent": true },
     { "source": "/ru/", "destination": "/", "permanent": true },
-    { "source": "/:path*", "has": [{ "type": "host", "value": "www.insulincalc.online" }], "destination": "https://insulincalc.online/:path*", "permanent": true }
+    { "source": "/:path*", "has": [{ "type": "host", "value": "vidgenlab.pro" }], "destination": "https://www.vidgenlab.pro/:path*", "permanent": true }
   ],
   "headers": [
     {

@@ -1,6 +1,6 @@
 # Развёртывание InsulinCalc
 
-Порядок: **GitHub (публичный репозиторий) → Vercel (тестовый адрес *.vercel.app) → Google Cloud (вход и таблицы) → проверка → домен insulincalc.online → SEO.**
+Порядок: **GitHub (публичный репозиторий) → Vercel (тестовый адрес *.vercel.app) → Google Cloud (вход и таблицы) → проверка → домен www.vidgenlab.pro → SEO.**
 Всё бесплатно. Время: ~1–1,5 часа.
 
 ---
@@ -49,17 +49,17 @@
 1. console.cloud.google.com → создайте проект **InsulinCalc**.
 2. **APIs & Services → Library** → включите: **Google Sheets API**, **Google Drive API**, **Google Picker API**.
 3. **Google Auth Platform** (OAuth consent screen):
-   - *Branding*: App name `InsulinCalc`, support email, App home page `https://insulincalc.online`, Privacy policy `https://insulincalc.online/privacy/`, Terms `https://insulincalc.online/terms/`, Authorized domain `insulincalc.online`.
+   - *Branding*: App name `InsulinCalc`, support email, App home page `https://www.vidgenlab.pro`, Privacy policy `https://www.vidgenlab.pro/privacy/`, Terms `https://www.vidgenlab.pro/terms/`, Authorized domain `vidgenlab.pro`.
    - *Audience*: **External**, статус **Testing**, в *Test users* добавьте свои e-mail (до 100 человек).
    - *Data access* → Add scopes: `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`, `.../auth/drive.file`.
 4. *Clients* → **Create client** → тип **Web application**. В **Authorized JavaScript origins** добавьте:
    - `https://insulincalc.vercel.app` (ваш точный тестовый адрес)
-   - `https://insulincalc.online`
-   - `https://www.insulincalc.online`
+   - `https://www.vidgenlab.pro`
+   - `https://vidgenlab.pro`
    - `http://localhost:8080`
    Redirect URIs не нужны. Скопируйте **Client ID**.
 5. **APIs & Services → Credentials → Create credentials → API key** → *Edit*:
-   - Application restrictions: **Websites** → `https://insulincalc.vercel.app/*`, `https://insulincalc.online/*`, `https://www.insulincalc.online/*`, `http://localhost:8080/*`
+   - Application restrictions: **Websites** → `https://insulincalc.vercel.app/*`, `https://www.vidgenlab.pro/*`, `https://vidgenlab.pro/*`, `http://localhost:8080/*`
    - API restrictions: **Google Picker API**. Скопируйте ключ.
 6. Номер проекта: значок ⚙️ / **IAM & Admin → Settings → Project number**.
 7. В GitHub откройте `assets/js/config.js` → ✏️ → вставьте `GOOGLE_CLIENT_ID`, `GOOGLE_API_KEY`, `GOOGLE_APP_ID` (номер проекта) → Commit. Vercel обновит сайт сам.
@@ -75,9 +75,9 @@
 
 **Перенос старых данных:** подключите старую таблицу через «Подключить существующую». Если в её первой строке есть колонка `event_id` (как у старого виджета), сайт продолжит писать в тот же лист и покажет историю в отчётах. Иначе будет создан новый лист `Events`, а старые листы останутся нетронутыми. Старый Apps Script не удаляйте, пока не убедитесь, что всё работает.
 
-## 5. Подключение домена insulincalc.online
+## 5. Подключение домена www.vidgenlab.pro
 
-1. Vercel → проект → **Settings → Domains** → **Add** → `insulincalc.online`. Vercel предложит добавить и `www.insulincalc.online` с редиректом на основной — согласитесь.
+1. Vercel → проект → **Settings → Domains** → **Add** → `www.vidgenlab.pro`. Vercel предложит добавить и `vidgenlab.pro` с редиректом на основной — согласитесь.
 2. Vercel покажет DNS-записи. У регистратора домена (или там, где сейчас DNS) сделайте:
    - `A` для `@` (корень) → IP, который показывает Vercel (обычно `76.76.21.21`);
    - `CNAME` для `www` → значение, которое показывает Vercel (обычно `cname.vercel-dns.com`).
@@ -95,7 +95,7 @@
 
 ## 7. SEO
 
-1. **Google Search Console** → Add property → *Domain* `insulincalc.online` → подтвердите TXT-записью у регистратора домена (или в Vercel → Domains, если NS на Vercel) → *Sitemaps* → `https://insulincalc.online/sitemap.xml`.
+1. **Google Search Console** → Add property → *Domain* `vidgenlab.pro` → подтвердите TXT-записью у регистратора домена (или в Vercel → Domains, если NS на Vercel) → *Sitemaps* → `https://www.vidgenlab.pro/sitemap.xml`.
 2. **Яндекс Вебмастер** (webmaster.yandex.ru) → добавить сайт → подтвердить (DNS или meta-тег в `<head>` главной) → *Индексирование → Файлы Sitemap* → тот же адрес. Укажите регион в «Региональности», если нужно.
 3. **Bing Webmaster Tools** → *Import from Google Search Console*.
 4. Проверки: Rich Results Test (FAQ, HowTo, WebApplication), PageSpeed Insights (цель 90+ на мобильных).
