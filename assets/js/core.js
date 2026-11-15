@@ -98,6 +98,13 @@
     var m = tzOffset(d || new Date(), tz), s = m < 0 ? '−' : '+'; m = Math.abs(m);
     return 'UTC' + s + Math.floor(m / 60) + (m % 60 ? ':' + (m % 60 < 10 ? '0' : '') + (m % 60) : '');
   }
+  function tzList() {
+    var z = []; try { z = Intl.supportedValuesOf('timeZone'); } catch (e) {}
+    if (!z.length) z = ['Europe/Kaliningrad', 'Europe/Moscow', 'Europe/Samara', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Yakutsk', 'Asia/Vladivostok', 'Asia/Magadan', 'Asia/Kamchatka',
+      'Europe/London', 'Europe/Berlin', 'Europe/Istanbul', 'Asia/Dubai', 'Asia/Bangkok', 'Asia/Shanghai', 'Asia/Tokyo', 'America/New_York', 'America/Los_Angeles'];
+    if (z.indexOf(MSK) < 0) z.unshift(MSK);
+    return z;
+  }
   // «дд.мм.гггг, чч:мм» → момент времени, считая строку московским временем
   function parseMsk(s) {
     var m = String(s || '').match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
@@ -123,17 +130,20 @@
   // ---------------------------------------------------------------- settings
   var DEFAULTS = {
     glucoseUnit: 'mmol', xeGrams: 12, carbUnit: I18N.lang === 'ru' ? 'xe' : 'g',
-    range: 2, dia: 4, name: '', notif: false, tz: 'auto',
+    range: 2, dia: 2.5, basalDia: 24, name: '', notif: false, tz: 'auto',
     target: '', isf: '', penStep: '', uc_breakfast: '', uc_lunch: '', uc_dinner: '', uc_snack: '', weight: ''
   };
+  // Обновление сохранённых настроек: длительность болюса по умолчанию стала 2,5 ч вместо 4 ч
+  function upgrade(d) { if (!d.cfgV2) { if (num(d.dia) === 4) d.dia = 2.5; d.cfgV2 = true; } return d; }
   var Settings = {
-    data: Object.assign({}, DEFAULTS, ls('ic_settings') || {}),
+    data: upgrade(Object.assign({}, DEFAULTS, ls('ic_settings') || {})),
     get: function (k) { return this.data[k]; },
     set: function (obj, persist) {
       Object.assign(this.data, obj); ls('ic_settings', this.data);
       if (persist !== false && Store.current) Store.current.saveSettings(this.data).catch(function (e) { console.warn(e); });
     },
-    merge: function (obj) { Object.assign(this.data, obj || {}); ls('ic_settings', this.data); }
+    // настройки из таблицы, сохранённые до обновления (без cfgV2), тоже обновляем
+    merge: function (obj) { obj = obj || {}; Object.assign(this.data, obj); if (!obj.cfgV2) this.data.cfgV2 = false; upgrade(this.data); ls('ic_settings', this.data); }
   };
 
   // ---------------------------------------------------------------- units
@@ -630,23 +640,37 @@
     },
 
     openSettings: function () {
-      var s = Settings.data;
+      var s = Settings.data, now = new Date(), auto = autoTz(), zones = tzList();
+      function opts(list, fmt) { return list.map(function (v) { return '<option value="' + v + '">' + (fmt ? fmt(v) : dec(v)) + '</option>'; }).join(''); }
+      var tzOpts = '<option value="auto">' + t('tz.auto') + ': ' + esc(auto) + ' (' + tzLabel(auto, now) + ')</option>' +
+        zones.map(function (z) { return '<option value="' + esc(z) + '">' + esc(z.replace(/_/g, ' ')) + ' (' + tzLabel(z, now) + ')</option>'; }).join('');
       var m = Shell.modal('<h2>⚙️ ' + t('settings.title') + '</h2><form id="set-form" class="form">' +
+        '<h3 class="set-h">💉 ' + t('settings.gCalc') + '</h3>' +
+        '<label>' + t('settings.carbUnit') + '<select name="carbUnit"><option value="xe">' + t('common.xe') + '</option><option value="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</option></select></label>' +
+        '<label>' + t('settings.xeGrams') + '<select name="xeGrams">' + opts([9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13], function (v) { return dec(v) + ' ' + t('common.g'); }) + '</select></label>' +
+        '<label>' + t('settings.dia') + '<select name="dia">' + opts([1.5, 2, 2.5, 3, 3.5, 4, 5], function (v) { return dec(v) + ' ' + t('common.h'); }) + '</select></label>' +
+        '<label>' + t('settings.basalDia') + '<select name="basalDia">' + opts([12, 16, 20, 24, 30, 36, 42], function (v) { return v + ' ' + t('common.h'); }) + '</select><span class="small muted">' + t('settings.basalHint') + '</span></label>' +
+        '<h3 class="set-h">🌍 ' + t('settings.gTime') + '</h3>' +
+        '<label>' + t('settings.tz') + '<select name="tz">' + tzOpts + '</select><span class="small muted" id="tz-prev"></span></label>' +
+        '<h3 class="set-h">⚙️ ' + t('settings.gGeneral') + '</h3>' +
         '<label>' + t('settings.lang') + '<select name="lang"><option value="ru">Русский</option><option value="en">English</option></select></label>' +
         '<label>' + t('settings.glucoseUnit') + '<select name="glucoseUnit"><option value="mmol">mmol/L (ммоль/л)</option><option value="mgdl">mg/dL (мг/дл)</option></select></label>' +
-        '<label>' + t('settings.carbUnit') + '<select name="carbUnit"><option value="xe">' + t('common.xe') + '</option><option value="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</option></select></label>' +
-        '<label>' + t('settings.xeGrams') + '<input name="xeGrams" type="text" inputmode="decimal"></label>' +
         '<label>' + t('settings.range') + '<input name="range" type="text" inputmode="decimal"></label>' +
-        '<label>' + t('settings.dia') + '<input name="dia" type="text" inputmode="decimal"></label>' +
         '<label>' + t('settings.name') + '<input name="name" type="text" maxlength="40"></label>' +
         '<label class="check"><input name="notif" type="checkbox"> ' + t('settings.notifOn') + '</label>' +
         '<button class="btn primary block" type="submit">' + t('btn.save') + '</button></form>');
       var f = m.querySelector('#set-form');
-      f.lang.value = I18N.lang; f.glucoseUnit.value = s.glucoseUnit; f.carbUnit.value = s.carbUnit; f.xeGrams.value = dec(Units.xeG());
-      f.range.value = dec(s.range); f.dia.value = dec(s.dia); f.name.value = s.name || ''; f.notif.checked = !!s.notif;
+      function pick(sel, v, def) { sel.value = String(v); if (sel.value !== String(v)) sel.value = String(def); }
+      f.lang.value = I18N.lang; f.glucoseUnit.value = s.glucoseUnit; f.carbUnit.value = s.carbUnit;
+      pick(f.xeGrams, Units.xeG(), 12); pick(f.dia, num(s.dia) || 2.5, 2.5); pick(f.basalDia, num(s.basalDia) || 24, 24);
+      pick(f.tz, s.tz || 'auto', 'auto');
+      function tzPrev() { var z = f.tz.value === 'auto' ? auto : f.tz.value; m.querySelector('#tz-prev').textContent = '🕐 ' + stamp(new Date(), z) + ' · UTC ' + stamp(new Date(), 'UTC'); }
+      f.tz.onchange = tzPrev; tzPrev();
+      f.range.value = dec(s.range); f.name.value = s.name || ''; f.notif.checked = !!s.notif;
       f.onsubmit = function (e) {
         e.preventDefault();
-        var o = { glucoseUnit: f.glucoseUnit.value, carbUnit: f.carbUnit.value, xeGrams: Math.min(XE_MAX, Math.max(XE_MIN, num(f.xeGrams.value) || 12)), range: num(f.range.value) || 2, dia: num(f.dia.value) || 4, name: f.name.value.trim(), notif: f.notif.checked };
+        var o = { glucoseUnit: f.glucoseUnit.value, carbUnit: f.carbUnit.value, xeGrams: +f.xeGrams.value, dia: +f.dia.value, basalDia: +f.basalDia.value, tz: f.tz.value,
+          range: num(f.range.value) || 2, name: f.name.value.trim(), notif: f.notif.checked };
         if (o.notif && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission();
         Settings.set(o);
         var langChanged = f.lang.value !== I18N.lang;
@@ -693,6 +717,6 @@
     }
   };
 
-  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, userTz: userTz, autoTz: autoTz, validTz: validTz, tzLabel: tzLabel, MSK: MSK, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
+  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, tzList: tzList, userTz: userTz, autoTz: autoTz, validTz: validTz, tzLabel: tzLabel, MSK: MSK, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
   window.Settings = Settings; window.Units = Units; window.Auth = Auth; window.Store = Store; window.Shell = Shell; window.Outbox = Outbox;
 })();

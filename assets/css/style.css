@@ -207,3 +207,5 @@ footer.site a{color:#e8eaed}
 .xeg-row .input-unit{position:static;transform:none}
 .tz-line{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;background:#f1f6fe;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:14px}
 .tz-line .link-btn{white-space:nowrap}
+.set-h{font-size:15px;margin:18px 0 4px;color:var(--blue)}
+.set-h:first-of-type{margin-top:4px}

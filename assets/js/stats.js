@@ -55,6 +55,22 @@
     return { iob: Math.round(total * 10) / 10, last: last };
   }
 
+  // Последний базальный: доза, скорость (доза / длительность в ч/ч) и сколько ещё действует.
+  // В активный инсулин НЕ добавляется — показывается отдельно, для информации.
+  function basalInfo(events, now, durH) {
+    now = now || new Date(); durH = durH || 24;
+    var last = null, lw = null;
+    events.forEach(function (ev) {
+      if (String(ev.event_type) !== 'basal_insulin' || !(num(ev.selected_dose) > 0)) return;
+      var w = parseWhen(ev); if (!w || w > now) return;
+      if (!lw || w > lw) { last = ev; lw = w; }
+    });
+    if (!last) return null;
+    var dose = num(last.selected_dose), el = (now - lw) / H;
+    if (el >= durH) return null;
+    return { dose: dose, rate: Math.round(dose / durH * 100) / 100, left: Math.round(dose * (1 - el / durH) * 10) / 10, until: new Date(lw.getTime() + durH * H), at: lw };
+  }
+
   // ---------------------------------------------------------------- авто-привязка замера к событию 2ч/4ч
   function findLinks(events, when, windowMin) {
     windowMin = windowMin || 30;
@@ -264,6 +280,6 @@
     return rows;
   }
 
-  window.Stats = { regressJoint: regressJoint, ols: ols, kind: kind, isBolus: isBolus, iob: iob, findLinks: findLinks, regress: regress, rowsOf: rowsOf,
+  window.Stats = { regressJoint: regressJoint, ols: ols, kind: kind, isBolus: isBolus, iob: iob, basalInfo: basalInfo, findLinks: findLinks, regress: regress, rowsOf: rowsOf,
     isfIndependent: isfIndependent, ukIndependent: ukIndependent, byMeal: byMeal, metrics: metrics, readings: readings, rollingMean: rollingMean, gmi: gmi, daily: daily, median: median, after: after };
 })();

@@ -48,7 +48,6 @@
         ['breakfast', 'lunch', 'dinner', 'correction', 'snack', 'basal'].map(function (m) {
           return '<button class="btn secondary" data-m="' + m + '">' + mealLabel(m) + '</button>';
         }).join('') + '</div>' + backBtn());
-      $('#tz-change').onclick = function () { go('tz'); };
       document.querySelectorAll('[data-m]').forEach(function (b) {
         b.onclick = function () {
           var m = b.dataset.m; S = { meal: m };
@@ -102,7 +101,7 @@
         ok: function (x) { S.isf = Units.isfFromDisp(x); Settings.set({ isf: r2(S.isf) }, false); go('current'); } });
     },
     current: function () {
-      var rg = gRange(1.5, 35), io = Stats.iob(events, new Date(), num(Settings.get('dia')) || 4);
+      var rg = gRange(1.5, 35), io = Stats.iob(events, new Date(), num(Settings.get('dia')) || 2.5);
       numStep({ q: t('step.current', { unit: Units.gLabel() }), unit: Units.gLabel(), min: rg[0], max: rg[1], step: Units.isMg() ? 1 : 0.1,
         extra: io.iob > 0 ? '<div class="note warn">💉 ' + t('iob.warn', { iob: io.iob, dose: num(io.last.selected_dose), time: IC.fmtTime(IC.parseWhen(io.last)) }) + '</div>' : '',
         ok: function (x) { S.current = Units.fromDisp(x); go('summary'); } });
@@ -148,66 +147,29 @@
       numStep({ q: t('step.glucoseValue', { unit: Units.gLabel() }), hint: t('step.glucoseHint'), unit: Units.gLabel(), min: rg[0], max: rg[1], step: Units.isMg() ? 1 : 0.1,
         ok: function (x) { saveGlucose(Units.fromDisp(x)); } });
     },
-    // выбор часового пояса (запоминается; «Авто» — пояс устройства)
-    tz: function () {
-      var cur = Settings.get('tz') || 'auto', auto = IC.autoTz(), zones = tzList(), now = new Date();
-      var opts = '<option value="auto">' + t('tz.auto') + ': ' + esc(auto) + ' (' + IC.tzLabel(auto, now) + ')</option>' +
-        zones.map(function (z) { return '<option value="' + esc(z) + '">' + esc(z.replace(/_/g, ' ')) + ' (' + IC.tzLabel(z, now) + ')</option>'; }).join('');
-      view('<p class="step-q">' + t('tz.title') + '</p><p class="step-hint">' + t('tz.hint') + '</p>' +
-        '<select id="tz-sel" class="num-input">' + opts + '</select><div class="note small" id="tz-preview"></div>' +
-        '<div class="row">' + backBtn() + '<button class="btn primary" id="ok">' + t('btn.save') + '</button></div>');
-      var sel = $('#tz-sel'); sel.value = zones.indexOf(cur) >= 0 ? cur : 'auto';
-      function prev() { var z = sel.value === 'auto' ? auto : sel.value; $('#tz-preview').innerHTML = '🕐 ' + t('tz.local') + ': <b>' + IC.stamp(new Date(), z) + '</b> (timestamp_moscow)<br>🌐 ' + t('tz.utc') + ': <b>' + IC.stamp(new Date(), 'UTC') + '</b> (timestamp_w)'; }
-      sel.onchange = prev; prev();
-      $('#ok').onclick = function () { Settings.set({ tz: sel.value }); back(); };
-    },
     help: function () {
       view('<h3 style="margin-top:0;color:var(--blue)">' + t('help.title') + '</h3><div style="font-size:15px">' + t('help.body') + '</div><button class="btn primary block" onclick="calcBack()">OK</button>');
     }
   };
 
-  // строка «Время расчёта» в начале расчёта: местное время в выбранном поясе и московское
+  // строка «Время расчёта» в начале расчёта (пояс меняется в настройках)
   function tzLine() {
-    var now = new Date(), z = IC.userTz(), auto = (Settings.get('tz') || 'auto') === 'auto';
-    return '<div class="tz-line"><span>🕐 ' + t('tz.local') + ': <b>' + IC.stamp(now, z) + '</b> <span class="muted">' + esc(z.replace(/_/g, ' ')) + ', ' + IC.tzLabel(z, now) + (auto ? ', ' + t('tz.autoShort') : '') + '</span>' +
-      '<br><span class="muted">🌐 ' + t('tz.utc') + ': ' + IC.stamp(now, 'UTC') + '</span></span>' +
-      '<button class="link-btn" id="tz-change">' + t('tz.change') + '</button></div>';
-  }
-  function tzList() {
-    var z = []; try { z = Intl.supportedValuesOf('timeZone'); } catch (e) {}
-    if (!z.length) z = ['Europe/Kaliningrad', 'Europe/Moscow', 'Europe/Samara', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Yakutsk', 'Asia/Vladivostok', 'Asia/Magadan', 'Asia/Kamchatka',
-      'Europe/London', 'Europe/Berlin', 'Europe/Istanbul', 'Asia/Dubai', 'Asia/Bangkok', 'Asia/Shanghai', 'Asia/Tokyo', 'America/New_York', 'America/Los_Angeles'];
-    if (z.indexOf(IC.MSK) < 0) z.unshift(IC.MSK);
-    return z;
+    var now = new Date(), z = IC.userTz();
+    return '<div class="tz-line"><span>🕐 ' + t('tz.local') + ': <b>' + IC.stamp(now, z) + '</b> <span class="muted">' + esc(z.replace(/_/g, ' ')) + ', ' + IC.tzLabel(z, now) + ' · UTC ' + IC.stamp(now, 'UTC').split(', ')[1] + '</span></span>' +
+      '<button class="link-btn" onclick="Shell.openSettings()">⚙️</button></div>';
   }
 
-  // шаг углеводов: ХЕ / граммы переключателем + вес 1 ХЕ (9–13 г, запоминается).
-  // Любой ввод пересчитывается: сохраняются и ХЕ, и граммы.
+  // шаг углеводов: единица (ХЕ / граммы) и вес 1 ХЕ берутся из настроек — в расчёте только ввод числа.
+  // Сохраняются и ХЕ, и граммы.
   function carbsStep(next) {
-    var unit = Settings.get('carbUnit') || 'xe';
-    function maxV() { return unit === 'xe' ? 40 : 400; }
-    var xeRow = '<div class="xeg-row"><label for="xeg">' + t('step.xeGrams') + '</label>' +
-      '<input class="num-input xeg-input" id="xeg" type="text" inputmode="decimal" value="' + IC.dec(Units.xeG()) + '">' +
-      '<span class="input-unit">' + t('common.g') + '</span></div>';
+    var unit = Settings.get('carbUnit') === 'g' ? 'g' : 'xe', xg = Units.xeG();
     numStep({
-      q: t('step.carbs'),
-      extra: '<div class="seg"><button data-u="xe">' + t('common.xe') + '</button><button data-u="g">' + (I18N.lang === 'ru' ? 'граммы' : 'grams') + '</button></div>' + xeRow,
-      unit: unit === 'xe' ? t('common.xe') : t('common.g'), min: 0.1, max: maxV,
+      q: t('step.carbs'), hint: t('step.carbsHint', { g: IC.dec(xg) }) + ' · <button class="link-btn" onclick="Shell.openSettings()">' + t('step.inSettings') + '</button>',
+      unit: unit === 'xe' ? t('common.xe') : t('common.g'), min: 0.1, max: unit === 'xe' ? 40 : 400,
       ok: function (x) {
-        var xg = num($('#xeg').value);
-        if (xg == null || xg < IC.XE_MIN || xg > IC.XE_MAX) { $('#err').textContent = t('step.xeGrams') + ': ' + t('err.range', { min: IC.XE_MIN, max: IC.XE_MAX }); $('#xeg').focus(); return; }
         S.carbUnit = unit; S.xeG = xg;
         if (unit === 'xe') { S.carbsHe = x; S.carbsG = x * xg; } else { S.carbsG = x; S.carbsHe = x / xg; }
-        Settings.set({ carbUnit: unit, xeGrams: xg }, false); next();
-      },
-      after: function (v) {
-        function paint() {
-          v.querySelectorAll('[data-u]').forEach(function (b) { b.classList.toggle('on', b.dataset.u === unit); });
-          var u = v.querySelector('.input-wrap .input-unit'); if (u) u.textContent = unit === 'xe' ? t('common.xe') : t('common.g');
-                  }
-        v.querySelectorAll('[data-u]').forEach(function (b) { b.onclick = function () { unit = b.dataset.u; paint(); v.querySelector('#num').focus(); }; });
-        v.querySelector('#xeg').addEventListener('keydown', function (e) { if (e.key === 'Enter') v.querySelector('#ok').click(); });
-        paint();
+        next();
       }
     });
   }
@@ -334,10 +296,12 @@
   // ---------------------------------------------------------------- главное меню
   function menu() {
     stack = [];
-    var io = Stats.iob(events, new Date(), num(Settings.get('dia')) || 4);
+    var io = Stats.iob(events, new Date(), num(Settings.get('dia')) || 2.5);
+    var bi = Stats.basalInfo(events, new Date(), num(Settings.get('basalDia')) || 24);
     var recent = events.slice().sort(function (a, b) { return (IC.parseWhen(b) || 0) - (IC.parseWhen(a) || 0); }).slice(0, 6);
     view('<div class="note warn">' + t('menu.disclaimer') + '</div>' +
       (io.iob > 0 ? '<div class="note">💉 ' + t('iob.warn', { iob: io.iob, dose: num(io.last.selected_dose), time: IC.fmtTime(IC.parseWhen(io.last)) }) + '</div>' : '') +
+      (bi ? '<div class="note small">🌙 ' + t('basal.info', { dose: IC.dec(bi.dose), rate: IC.dec(bi.rate), until: IC.fmtTime(bi.until) }) + '</div>' : '') +
       '<button class="btn primary block big" id="m-start">' + t('menu.start') + '</button>' +
       '<button class="btn secondary block" id="m-gl">' + t('menu.glucose') + '</button>' +
       '<div class="divider"></div><div class="row"><a class="btn report" href="/report/">' + t('menu.report') + '</a><button class="btn ghost" id="m-help">' + t('menu.help') + '</button></div>' +
