@@ -210,6 +210,19 @@
     return { n: n, inTarget: pct(inT), high: pct(hi), low: pct(lo), missRate: n ? 100 - pct(inT) : null, hypo: hypo, avg: avg, readings: all.length };
   }
 
+  // Средняя глюкоза (ммоль/л) за `days` дней до каждого момента из `times`.
+  // `rs` — все замеры, отсортированные по времени.
+  function rollingMean(rs, times, days) {
+    var win = days * 86400000, lo = 0, hi = 0, sum = 0;
+    return times.map(function (tm) {
+      var end = tm.getTime();
+      while (hi < rs.length && rs[hi].t.getTime() <= end) { sum += rs[hi].v; hi++; }
+      while (lo < hi && rs[lo].t.getTime() <= end - win) { sum -= rs[lo].v; lo++; }
+      return hi > lo ? sum / (hi - lo) : null;
+    });
+  }
+  // GMI (Glucose Management Indicator), %: 3,31 + 0,02392 × средняя глюкоза в мг/дл
+  function gmi(meanMmol) { return 3.31 + 0.02392 * meanMmol * 18.0182; }
   function readings(events) {
     var out = [];
     events.forEach(function (ev) {
@@ -252,5 +265,5 @@
   }
 
   window.Stats = { regressJoint: regressJoint, ols: ols, kind: kind, isBolus: isBolus, iob: iob, findLinks: findLinks, regress: regress, rowsOf: rowsOf,
-    isfIndependent: isfIndependent, ukIndependent: ukIndependent, byMeal: byMeal, metrics: metrics, readings: readings, daily: daily, median: median, after: after };
+    isfIndependent: isfIndependent, ukIndependent: ukIndependent, byMeal: byMeal, metrics: metrics, readings: readings, rollingMean: rollingMean, gmi: gmi, daily: daily, median: median, after: after };
 })();

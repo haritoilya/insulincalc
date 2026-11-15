@@ -120,7 +120,20 @@
       gl.push(ds('+' + rg, rd.map(function () { return Units.toDisp(tg + rg); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
       gl.push(ds('−' + rg, rd.map(function () { return Units.toDisp(Math.max(0, tg - rg)); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
     }
-    chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true });
+    // Скользящая средняя за 90 дней (по всем замерам таблицы, а не только за выбранный период) и GMI
+    var avg90 = Stats.rollingMean(Stats.readings(all), rd.map(function (r) { return r.t; }), 90);
+    var lastAvg = null; avg90.forEach(function (v) { if (v != null) lastAvg = v; });
+    if (lastAvg != null) {
+      gl.push(ds(t('ch.avg90') + ' · GMI ' + Stats.gmi(lastAvg).toFixed(1) + '%', avg90.map(function (v) { return v == null ? null : Units.toDisp(v); }), '#e53935',
+        { fill: false, tension: 0.3, pointRadius: 0, borderWidth: 2.5, gmi: avg90 }));
+    }
+    chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
+      legend: { position: 'top' },
+      tooltip: { callbacks: { label: function (c) {
+        var s = c.dataset.label.split(' · ')[0] + ': ' + c.formattedValue;
+        var raw = c.dataset.gmi && c.dataset.gmi[c.dataIndex];
+        return raw != null ? s + ' (GMI ' + Stats.gmi(raw).toFixed(1) + '%)' : s;
+      } } } } } });
   }
 
   // ---------------------------------------------------------------- журнал
