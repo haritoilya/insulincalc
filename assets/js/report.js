@@ -134,7 +134,7 @@
     var extraScales = {};
     if (lastG != null) {
       gl.push(ds(t('ch.gmi') + ' · ' + lastG.toFixed(1) + '%', gmiData, '#0d1b5e',
-        { fill: false, tension: 0.35, pointRadius: 3, pointBackgroundColor: '#0d1b5e', borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData }));
+        { fill: false, tension: 0.35, pointRadius: 3, pointBackgroundColor: '#0d1b5e', borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, order: -1 }));
       extraScales.y2 = { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { callback: function (v) { return v.toFixed(2); } } };
     }
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
