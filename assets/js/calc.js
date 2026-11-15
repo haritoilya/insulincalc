@@ -332,7 +332,8 @@
     var d = num(ev.selected_dose); if (d) parts.push('💉' + IC.dec(d) + ' ' + t('common.units'));
     var xe = Units.xeOf(ev); if (xe) parts.push('🍞' + IC.dec(Math.round(xe * 10) / 10) + ' ' + t('common.xe'));
     var g = num(ev.current_glucose), g2 = num(ev.glucose_2h);
-    if (g != null || g2 != null) parts.push('🩸' + (g != null ? dg(g) : '—') + (g2 != null ? '→' + dg(g2) : ''));
+    // глюкоза всегда в формате «до→через 2 ч»; если замера через 2 ч ещё нет — «—»
+    if (g != null || g2 != null) parts.push('🩸' + (g != null ? dg(g) : '—') + '→' + (g2 != null ? dg(g2) : '—'));
     var today = w && IC.fmtDate(w, true).split(',')[0] === IC.fmtDate(new Date(), true).split(',')[0];
     var when = w ? (today ? IC.fmtTime(w) : IC.fmtDate(w)) : '—';
     var label = t(KIND_LABEL[k]).replace(/^[^A-Za-zА-Яа-яЁё]+/, '').replace(/ без инсулина| without insulin/, '');
