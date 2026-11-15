@@ -516,9 +516,11 @@
       var h = $('#topbar'); if (!h) return;
       var u = Auth.user(), mode = ls('ic_mode');
       var p = Shell.page;
+      // ⚙️ Настройки — всегда видимая кнопка в шапке (и в демо, и после входа через Google)
+      var gear = '<button class="btn-sm" onclick="Shell.openSettings()" title="' + t('nav.settings') + '" aria-label="' + t('nav.settings') + '">⚙️</button>';
       var userHtml = '';
       if (mode === 'google' && u) {
-        userHtml = '<div class="user-menu"><button class="avatar-btn" id="user-btn" aria-haspopup="true">' +
+        userHtml = gear + '<div class="user-menu"><button class="avatar-btn" id="user-btn" aria-haspopup="true">' +
           (u.picture ? '<img src="' + esc(u.picture) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + esc((u.name || u.email || '?')[0]) + '</span>') + '</button>' +
           '<div class="dropdown" id="user-dd"><div class="dd-head"><b>' + esc(u.name || '') + '</b><br><small>' + esc(u.email || '') + '</small></div>' +
           (Store.current && Store.current.url ? '<a href="' + esc(Store.current.url) + '" target="_blank" rel="noopener">📄 ' + t('nav.sheet') + '</a>' : '') +
@@ -526,7 +528,7 @@
           '<button onclick="Shell.openSettings()">⚙️ ' + t('nav.settings') + '</button>' +
           '<button onclick="Shell.signOut()">🚪 ' + t('nav.signout') + '</button></div></div>';
       } else if (mode === 'demo') {
-        userHtml = '<button class="btn-sm" onclick="Shell.openSettings()" title="' + t('nav.settings') + '">⚙️</button>';
+        userHtml = gear;
       }
       var guide = I18N.lang === 'ru' ? '/kak-rasschitat-dozu-insulina/' : '/en/insulin-dose-guide/';
       h.innerHTML = '<div class="topbar-in"><a class="brand" href="' + (I18N.lang === 'ru' ? '/' : '/en/') + '"><img src="/assets/img/favicon.svg" alt="" width="28" height="28"><span>InsulinCalc</span></a>' +
