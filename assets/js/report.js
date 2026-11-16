@@ -93,7 +93,7 @@
     });
   }
   function ds(label, data, color, extra) {
-    return Object.assign({ label: label, data: data, borderColor: color, backgroundColor: color + '22', tension: 0.3, fill: true, pointRadius: 3 }, extra || {});
+    return Object.assign({ label: label, data: data, borderColor: color, backgroundColor: color + '22', tension: 0.3, fill: true, pointRadius: 3, pointHoverRadius: 5, pointBorderWidth: 1 }, extra || {}); // одинаковые маркеры на всех графиках
   }
   function lbl(day) { var p = day.split('-'); return p[2] + '.' + p[1]; }
 
@@ -129,9 +129,9 @@
       ds(t('ch.totalKg'), daily.map(function (d) { return d.any && d.wKnown ? Math.round(d.total / d.wKnown * 100) / 100 : null; }), '#1a73e8'),
       ds(t('ch.basalKg'), daily.map(function (d) { return d.any && d.wKnown ? Math.round(d.basal / d.wKnown * 100) / 100 : null; }), '#ff9800')
     ], u + '/' + t('common.kg'));
-    chart('c-weight', 'line', labels, [ds(t('ch.weightKg'), daily.map(function (d) { return d.weight; }), '#34a853', { pointRadius: 5 })], t('common.kg'), { noZero: true });
+    chart('c-weight', 'line', labels, [ds(t('ch.weightKg'), daily.map(function (d) { return d.weight; }), '#34a853')], t('common.kg'), { noZero: true });
     // линии с заливкой (как «Общее количество инсулина в сутки»): болюсный, базальный, ХЕ
-    var area = { tension: 0.4, borderWidth: 3, pointRadius: 4 };
+    var area = { tension: 0.4 }; // маркеры — как на остальных графиках (размер по умолчанию в ds)
     chart('c-food', 'line', labels, [
       ds(t('ch.bolus'), daily.map(function (d) { return d.any ? r1(d.bolus) : null; }), '#1a73e8', area),
       ds(t('ch.basal'), daily.map(function (d) { return d.any ? r1(d.basal) : null; }), '#ff9800', area),
@@ -161,7 +161,7 @@
     var extraScales = {};
     if (lastG != null) {
       gl.push(ds(t(useCgm ? 'ch.gmiCgm' : 'ch.gmi') + ' · ' + lastG.toFixed(1) + '%', gmiData, '#0d1b5e',
-        { fill: false, tension: 0.35, pointRadius: 3, pointBackgroundColor: '#0d1b5e', borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, order: -1 }));
+        { fill: false, tension: 0.35, borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, order: -1 }));
       extraScales.y2 = { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { callback: function (v) { return v.toFixed(2); } } };
     }
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
