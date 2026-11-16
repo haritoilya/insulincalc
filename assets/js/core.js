@@ -110,6 +110,10 @@
     var m = String(s || '').match(/(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})/);
     return m ? new Date(Date.UTC(+m[3], +m[2] - 1, +m[1], +m[4] - MSK_OFFSET, +m[5])) : null;
   }
+  // Календарный день по московскому времени (как в колонке timestamp таблицы) — для отчётов по дням,
+  // чтобы запись в 23:26 по Москве не уезжала на следующий день, если часы устройства в другом поясе
+  function mskDay(d) { var p = partsIn(d, MSK); return p.year + '-' + p.month + '-' + p.day; }
+  function mskDayEnd(d) { var p = partsIn(d, MSK); return new Date(Date.UTC(+p.year, +p.month - 1, +p.day, 23 - MSK_OFFSET, 59, 59, 999)); }
   // серийная дата Google Sheets (таблица в московском поясе) → момент времени
   function fromSerial(n) { return new Date(Math.round((n - 25569) * 86400000) - MSK_OFFSET * 3600000); }
   // Время события: timestamp (московское) → timestamp_w (UTC) → created_at (старые записи).
@@ -719,6 +723,6 @@
     }
   };
 
-  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, tzList: tzList, userTz: userTz, autoTz: autoTz, validTz: validTz, tzLabel: tzLabel, MSK: MSK, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
+  window.IC = { $: $, esc: esc, num: num, ls: ls, fmtDate: fmtDate, fmtTime: fmtTime, parseWhen: parseWhen, dec: dec, stamp: stamp, mskDay: mskDay, mskDayEnd: mskDayEnd, tzList: tzList, userTz: userTz, autoTz: autoTz, validTz: validTz, tzLabel: tzLabel, MSK: MSK, HEADERS: HEADERS, MGDL: MGDL, XE_MIN: XE_MIN, XE_MAX: XE_MAX };
   window.Settings = Settings; window.Units = Units; window.Auth = Auth; window.Store = Store; window.Shell = Shell; window.Outbox = Outbox;
 })();

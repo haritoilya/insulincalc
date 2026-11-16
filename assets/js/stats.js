@@ -253,12 +253,11 @@
   }
 
   // ---------------------------------------------------------------- агрегаты по дням
-  function dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function dayKey(d) { return IC.mskDay(d); } // день по московскому времени, как в таблице
   function daily(events, days, allEvents) {
     var now = new Date(), map = {}, keys = [];
     for (var i = days - 1; i >= 0; i--) {
-      var d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-      var k = dayKey(d); keys.push(k); map[k] = { bolus: 0, basal: 0, xe: 0, weight: null, any: false };
+      var k = dayKey(new Date(now.getTime() - i * 24 * H)); keys.push(k); map[k] = { bolus: 0, basal: 0, xe: 0, weight: null, any: false };
     }
     events.forEach(function (ev) {
       var w = parseWhen(ev); if (!w) return; var k = dayKey(w); var r = map[k]; if (!r) return;

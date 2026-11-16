@@ -97,13 +97,13 @@
   }
   function lbl(day) { var p = day.split('-'); return p[2] + '.' + p[1]; }
 
-  function dkey(d) { var z = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+  function dkey(d) { return IC.mskDay(d); } // день по московскому времени
   // Средняя (ммоль/л) по данным CGM за `win` дней, заканчивая днём каждой даты из `ends`
   function cgmMeans(ends, win) {
     var by = {}; cgm.days.forEach(function (d) { by[d.day] = d; });
     return ends.map(function (end) {
       var s = 0, n = 0, d = new Date(end);
-      for (var i = 0; i < win; i++) { var r = by[dkey(d)]; if (r) { s += r.sum; n += r.n; } d.setDate(d.getDate() - 1); }
+      for (var i = 0; i < win; i++) { var r = by[dkey(d)]; if (r) { s += r.sum; n += r.n; } d = new Date(d.getTime() - 86400000); }
       return n ? s / n : null;
     });
   }
@@ -111,7 +111,7 @@
   function loadCgm(days) {
     var tok = Auth.tok && Auth.tok();
     if (!tok || ls0('ic_mode') !== 'google') { cgm = null; return Promise.resolve(); }
-    return fetch('/api/cgm?days=' + (days + 90) + '&tz=' + new Date().getTimezoneOffset(), { headers: { Authorization: 'Bearer ' + tok } })
+    return fetch('/api/cgm?days=' + (days + 90) + '&tz=-180', { headers: { Authorization: 'Bearer ' + tok } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) { cgm = j && j.days ? j : null; })
       .catch(function () { cgm = null; });
@@ -147,7 +147,7 @@
     // Одна точка на день, на последнем замере дня; ось справа, %.
     var allRd = Stats.readings(all), dayEnd = {}, lastIdx = {};
     rd.forEach(function (r, i) {
-      var d = new Date(r.t); d.setHours(23, 59, 59, 999);
+      var d = IC.mskDayEnd(r.t);
       var k = d.getTime(); dayEnd[i] = d; lastIdx[k] = i;
     });
     var idxs = Object.keys(lastIdx).map(function (k) { return lastIdx[k]; }).sort(function (x, y) { return x - y; });
