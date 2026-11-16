@@ -130,10 +130,12 @@
       ds(t('ch.basalKg'), daily.map(function (d) { return d.any && d.wKnown ? Math.round(d.basal / d.wKnown * 100) / 100 : null; }), '#ff9800')
     ], u + '/' + t('common.kg'));
     chart('c-weight', 'line', labels, [ds(t('ch.weightKg'), daily.map(function (d) { return d.weight; }), '#34a853', { pointRadius: 5 })], t('common.kg'), { noZero: true });
-    chart('c-food', 'bar', labels, [
-      ds(t('ch.bolus'), daily.map(function (d) { return d.any ? r1(d.bolus) : null; }), '#1a73e8', { backgroundColor: '#1a73e8bb' }),
-      ds(t('ch.basal'), daily.map(function (d) { return d.any ? r1(d.basal) : null; }), '#ff9800', { backgroundColor: '#ff9800bb' }),
-      ds(t('ch.xe'), daily.map(function (d) { return d.any ? r1(d.xe) : null; }), '#34a853', { type: 'line', fill: false, yAxisID: 'y' })
+    // линии с заливкой (как «Общее количество инсулина в сутки»): болюсный, базальный, ХЕ
+    var area = { tension: 0.4, borderWidth: 3, pointRadius: 4 };
+    chart('c-food', 'line', labels, [
+      ds(t('ch.bolus'), daily.map(function (d) { return d.any ? r1(d.bolus) : null; }), '#1a73e8', area),
+      ds(t('ch.basal'), daily.map(function (d) { return d.any ? r1(d.basal) : null; }), '#ff9800', area),
+      ds(t('ch.xe'), daily.map(function (d) { return d.any ? r1(d.xe) : null; }), '#34a853', area)
     ], u + ' / ' + t('common.xe'));
     var rd = Stats.readings(period);
     var tg = num(Settings.get('target')), rg = num(Settings.get('range')) || 2;
