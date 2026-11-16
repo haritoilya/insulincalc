@@ -4,6 +4,9 @@
   'use strict';
   var num = IC.num, parseWhen = IC.parseWhen;
   var H = 3600000;
+  // Минимум углеводов, при котором событие годится для оценки УК: при меньшем количестве деление на ХЕ
+  // многократно усиливает любые посторонние колебания глюкозы (например, завтрак 0,5 ХЕ с дозой в основном на коррекцию).
+  var MIN_XE = 1;
 
   var MEAL_MAP = { 'завтрак': 'breakfast', 'breakfast': 'breakfast', 'обед': 'lunch', 'lunch': 'lunch', 'ужин': 'dinner', 'dinner': 'dinner',
     'correction_only': 'corr', 'correction_with_food': 'corrFood', 'night': 'basal', 'snack': 'snack', 'перекус': 'snack' };
@@ -38,6 +41,48 @@
     var g2 = num(ev.glucose_2h), g4 = num(ev.glucose_4h);
     if (kind(ev) === 'corr') return g4 != null ? g4 : g2;
     return g2 != null ? g2 : g4;
+  }
+
+  // ХЕ события для статистики: из граммов по текущему весу 1 ХЕ (настройка), чтобы записи,
+  // сделанные при 10 г/ХЕ и при 12 г/ХЕ, были в одних единицах. УК в отчётах = ЕД на 1 ХЕ текущего веса.
+  function xeNorm(ev) {
+    var g = num(ev.carbs_grams);
+    if (g != null) return g / Units.xeG();
+    return num(ev.carbs_he) || 0;
+  }
+
+  // «Чистый» замер после события. Событие не годится для оценки коэффициентов, если:
+  //  • перед ним ещё действует предыдущий болюс (в пределах длительности действия болюса из настроек)
+  //    или была еда без инсулина за последние 2 ч;
+  //  • между инъекцией и замером (2 ч / 4 ч) был другой болюс или еда.
+  // Возвращает функцию ev → значение замера или null. Для подколок без еды приоритет 4 ч, затем 2 ч; для еды — 2 ч, затем 4 ч.
+  function cleaner(allEvents) {
+    var dia = (num(Settings.get('dia')) || 2.5) * H;
+    var marks = [];
+    (allEvents || []).forEach(function (e) {
+      var w = parseWhen(e); if (!w) return;
+      var bolus = isBolus(e), food = xeNorm(e) > 0 && ['breakfast', 'lunch', 'dinner', 'corrFood', 'snack'].indexOf(kind(e)) >= 0;
+      if (bolus || food) marks.push({ t: w.getTime(), ev: e, bolus: bolus });
+    });
+    return function (ev) {
+      var w = parseWhen(ev); if (!w) return null;
+      var t0 = w.getTime(), i, m;
+      for (i = 0; i < marks.length; i++) {
+        m = marks[i]; if (m.ev === ev || (ev.event_id && m.ev.event_id === ev.event_id)) continue;
+        if (m.t <= t0 && t0 - m.t < (m.bolus ? dia : 2 * H)) return null; // наложение на предыдущее событие
+      }
+      var order = kind(ev) === 'corr' ? [4, 2] : [2, 4];
+      for (var k = 0; k < order.length; k++) {
+        var h = order[k], g = num(ev['glucose_' + h + 'h']); if (g == null) continue;
+        var dirty = false;
+        for (i = 0; i < marks.length; i++) {
+          m = marks[i]; if (m.ev === ev || (ev.event_id && m.ev.event_id === ev.event_id)) continue;
+          if (m.t > t0 && m.t < t0 + h * H) { dirty = true; break; }
+        }
+        if (!dirty) return g;
+      }
+      return null;
+    };
   }
 
   // ---------------------------------------------------------------- активный инсулин (линейная модель)
@@ -102,8 +147,9 @@
     var ssr = 0, sst = 0;
     rows.forEach(function (r) { var p = a * r.xe - b * r.dose; ssr += Math.pow(r.dy - p, 2); sst += Math.pow(r.dy - mean, 2); });
     var r2 = sst > 0 ? Math.max(0, 1 - ssr / sst) : null;
-    var ok = b > 0.05 && a > 0 && b < 30;
-    return { a: a, isf: b, uk: ok ? a / b : null, r2: r2, n: n, ok: ok };
+    var uk = b > 0 ? a / b : null;
+    var ok = b > 0.2 && b < 30 && a > 0 && uk > 0.05 && uk < 20;
+    return { a: a, isf: b, uk: ok ? uk : null, r2: r2, n: n, ok: ok };
   }
 
   // общий МНК через нормальные уравнения (Гаусс)
@@ -123,69 +169,90 @@
   // Совместная модель: у каждого приёма пищи свой коэффициент углеводов, ФЧИ — общий.
   // Δg = Σ a_m·XE·[приём=m] − ФЧИ·Доза. Подколки без еды «якорят» ФЧИ.
   function regressJoint(rows) {
+    // приёмы с малым количеством углеводов (< MIN_XE) — отдельные группы «~»: участвуют в оценке ФЧИ,
+    // но их коэффициент углеводов в УК не идёт (слишком неточен)
+    function gname(r) { return (r.meal || 'other') + (r.xe < MIN_XE ? '~' : ''); }
     var groups = {};
-    rows.forEach(function (r) { if (r.xe > 0.1) { var g = r.meal || 'other'; groups[g] = (groups[g] || 0) + 1; } });
+    rows.forEach(function (r) { if (r.xe > 0.1) { var g = gname(r); groups[g] = (groups[g] || 0) + 1; } });
     var names = Object.keys(groups).filter(function (g) { return groups[g] >= 2; });
-    var use = rows.filter(function (r) { return r.xe <= 0.1 || names.indexOf(r.meal || 'other') >= 0; });
+    var use = rows.filter(function (r) { return r.xe <= 0.1 || names.indexOf(gname(r)) >= 0; });
     var k = names.length + 1;
     if (use.length < k + 2) return null;
-    var X = use.map(function (r) { var x = names.map(function (g) { return (r.meal || 'other') === g ? r.xe : 0; }); x.push(-r.dose); return x; });
+    var X = use.map(function (r) { var x = names.map(function (g) { return r.xe > 0.1 && gname(r) === g ? r.xe : 0; }); x.push(-r.dose); return x; });
     var y = use.map(function (r) { return r.dy; });
     var c = ols(X, y); if (!c) return null;
     var isf = c[k - 1], mean = y.reduce(function (s, v) { return s + v; }, 0) / y.length, ssr = 0, sst = 0;
     X.forEach(function (x, n) { var p = 0; for (var i = 0; i < k; i++) p += x[i] * c[i]; ssr += Math.pow(y[n] - p, 2); sst += Math.pow(y[n] - mean, 2); });
-    var ok = isf > 0.05 && isf < 30;
+    var ok = isf > 0.2 && isf < 30;
     var per = {}, wsum = 0, wn = 0;
-    names.forEach(function (g, i) { var uk = ok && c[i] > 0 ? c[i] / isf : null; per[g] = { uk: uk, n: groups[g] }; if (uk) { wsum += uk * groups[g]; wn += groups[g]; } });
+    names.forEach(function (g, i) { if (g.slice(-1) === '~') return; var uk = ok && c[i] > 0 ? c[i] / isf : null; if (uk != null && !(uk > 0.05 && uk < 20)) uk = null; per[g] = { uk: uk, n: groups[g] }; if (uk) { wsum += uk * groups[g]; wn += groups[g]; } });
     return { isf: ok ? isf : null, uk: wn ? wsum / wn : null, per: per, r2: sst > 0 ? Math.max(0, 1 - ssr / sst) : null, n: use.length, ok: ok && wn > 0 };
   }
 
-  function rowsOf(events) {
-    var out = [];
+  // Строки для регрессии: только события с «чистым» замером (см. cleaner). ctx — все события (для поиска соседних).
+  function rowsOf(events, ctx) {
+    var out = [], clean = cleaner(ctx || events);
+    out.skipped = 0;
     events.forEach(function (ev) {
       if (String(ev.event_type) !== 'insulin_calculation') return;
-      var g0 = num(ev.current_glucose), g1 = after(ev), d = num(ev.selected_dose);
-      if (g0 == null || g1 == null || d == null) return;
-      var k = kind(ev); out.push({ xe: Units.xeOf(ev), dose: d, dy: g1 - g0, ev: ev, meal: k === 'corrFood' ? 'snack' : k });
+      var g0 = num(ev.current_glucose), d = num(ev.selected_dose);
+      if (g0 == null || !d || after(ev) == null) return;
+      var g1 = clean(ev);
+      if (g1 == null) { out.skipped++; return; }
+      var k = kind(ev); out.push({ xe: xeNorm(ev), dose: d, dy: g1 - g0, ev: ev, meal: k === 'corrFood' ? 'snack' : k });
     });
     return out;
   }
 
   // ---------------------------------------------------------------- независимые («чистые события»)
-  function isfIndependent(events) {
-    var vals = [];
+  // ФЧИ = (глюкоза до − глюкоза после) / доза — по подколкам без еды с «чистым» замером
+  function isfIndependent(events, ctx) {
+    var vals = [], clean = cleaner(ctx || events);
     events.forEach(function (ev) {
       if (kind(ev) !== 'corr') return;
-      var g0 = num(ev.current_glucose), g1 = after(ev), d = num(ev.selected_dose);
-      if (g0 == null || g1 == null || !d) return;
+      var g0 = num(ev.current_glucose), d = num(ev.selected_dose);
+      if (g0 == null || !d) return;
+      var g1 = clean(ev); if (g1 == null) return;
       var v = (g0 - g1) / d; if (v > 0 && v < 30) vals.push(v);
     });
     vals = trim(vals);
     return { value: median(vals), events: vals.length };
   }
-  function ukIndependent(events, isfRef) {
-    var vals = [];
+  // УК = (доза + (глюкоза после − глюкоза до) / ФЧИ) / ХЕ — сколько инсулина на 1 ХЕ потребовалось бы,
+  // чтобы глюкоза после еды вернулась к исходной. Берутся приёмы пищи, где глюкоза перед едой близка к цели (±1,5):
+  // тогда коррекционная часть дозы мала и результат слабо зависит от точности ФЧИ.
+  // isfRef — ФЧИ по чистым подколкам (если их ≥ 3), иначе ФЧИ, который использовался в самом расчёте.
+  function ukIndependent(events, isfRef, ctx) {
+    var vals = [], clean = cleaner(ctx || events);
     events.forEach(function (ev) {
       var k = kind(ev);
       if (['breakfast', 'lunch', 'dinner', 'corrFood'].indexOf(k) < 0) return;
-      var g0 = num(ev.current_glucose), g1 = after(ev), d = num(ev.selected_dose), tg = num(ev.target_glucose), xe = Units.xeOf(ev);
+      var g0 = num(ev.current_glucose), d = num(ev.selected_dose), tg = num(ev.target_glucose), xe = xeNorm(ev);
       var isf = isfRef || num(ev.correction_factor);
-      if (g0 == null || g1 == null || d == null || tg == null || !isf || xe < 0.5) return;
+      if (g0 == null || !d || tg == null || !isf || xe < MIN_XE) return;
       if (Math.abs(g0 - tg) > 1.5) return;
-      var v = (d + (g1 - tg) / isf) / xe; if (v > 0 && v < 20) vals.push(v);
+      var g1 = clean(ev); if (g1 == null) return;
+      var v = (d + (g1 - g0) / isf) / xe; if (v > 0 && v < 20) vals.push(v);
     });
     vals = trim(vals);
     return { value: median(vals), events: vals.length };
   }
 
   // ---------------------------------------------------------------- по приёмам пищи
-  function byMeal(events, isfRef) {
+  // Для каждого приёма пищи:
+  //  УК — медиана по событиям: (доза + Δглюкозы / ФЧИ) / ХЕ, где ФЧИ — опорный (isfRef) или из самого расчёта.
+  //  Регрессия по одному приёму (Δg = a·ХЕ − ФЧИ·доза) используется, только если данных достаточно (≥ 6 событий)
+  //  и она хорошо описывает данные (R² ≥ 0,5): внутри одного приёма доза и ХЕ меняются почти синхронно,
+  //  и при малом числе событий регрессия даёт случайные значения.
+  //  ФЧИ приёма — из регрессии; иначе из «коррекционной» части дозы: −Δg / (доза − ХЕ·УК), если эта часть ≥ 0,5 ЕД (от 3 событий).
+  function byMeal(events, isfRef, ctx) {
     var res = {};
     ['breakfast', 'lunch', 'dinner'].forEach(function (m) {
-      var rows = rowsOf(events.filter(function (e) { return kind(e) === m; })).filter(function (r) { return r.xe >= 0.5; });
-      var out = { value: null, fchi: null, events: rows.length, method: null };
-      var reg = rows.length >= 4 ? regress(rows) : null;
-      if (reg && reg.ok) { out.value = reg.uk; out.fchi = reg.isf; out.method = 'regression'; out.r2 = reg.r2; }
+      var all = rowsOf(events.filter(function (e) { return kind(e) === m; }), ctx || events);
+      var rows = all.filter(function (r) { return r.xe >= MIN_XE; });
+      var out = { value: null, fchi: null, events: rows.length, method: null, small: all.length - rows.length };
+      var reg = rows.length >= 6 ? regress(rows) : null;
+      if (reg && reg.ok && reg.r2 != null && reg.r2 >= 0.5) { out.value = reg.uk; out.fchi = reg.isf; out.method = 'regression'; out.r2 = reg.r2; }
       else {
         var vals = [];
         rows.forEach(function (r) {
@@ -193,15 +260,15 @@
           var v = (r.dose + r.dy / isf) / r.xe; if (v > 0 && v < 20) vals.push(v);
         });
         vals = trim(vals);
-        out.value = median(vals); out.method = 'events';
-        // ФЧИ для приёма: по событиям этого приёма, где ХЕ мало влияет — оцениваем из остатка
-        var fv = [];
+        out.value = vals.length >= 3 ? median(vals) : null; out.method = out.value != null ? 'events' : null; // меньше 3 событий — оценки нет
+        var ukM = out.value, fv = [];
         rows.forEach(function (r) {
-          var uk = num(r.ev.uc); if (!uk || !r.dose) return;
-          var corrPart = r.dose - r.xe * uk; // часть дозы сверх «нормы» на еду
-          if (corrPart > 0.3) { var v = (-r.dy) / corrPart; if (v > 0 && v < 30) fv.push(v); }
+          var uk = num(r.ev.uc) || ukM; if (!uk) return;
+          var corrPart = r.dose - r.xe * uk; // часть дозы сверх нормы на еду
+          if (corrPart >= 0.5) { var v = (-r.dy) / corrPart; if (v > 0 && v < 30) fv.push(v); }
         });
-        out.fchi = fv.length >= 2 ? median(fv) : null;
+        fv = trim(fv);
+        out.fchi = fv.length >= 3 ? median(fv) : null;
       }
       res[m] = out;
     });
@@ -280,5 +347,5 @@
   }
 
   window.Stats = { regressJoint: regressJoint, ols: ols, kind: kind, isBolus: isBolus, iob: iob, basalInfo: basalInfo, findLinks: findLinks, regress: regress, rowsOf: rowsOf,
-    isfIndependent: isfIndependent, ukIndependent: ukIndependent, byMeal: byMeal, metrics: metrics, readings: readings, rollingMean: rollingMean, gmi: gmi, daily: daily, median: median, after: after };
+    isfIndependent: isfIndependent, ukIndependent: ukIndependent, byMeal: byMeal, metrics: metrics, xeNorm: xeNorm, cleaner: cleaner, readings: readings, rollingMean: rollingMean, gmi: gmi, daily: daily, median: median, after: after };
 })();

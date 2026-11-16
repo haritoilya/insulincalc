@@ -29,31 +29,35 @@
     var regrSet = $('#regr').value === 'all' ? all : period;
 
     // --- 1. независимые
-    var isfI = Stats.isfIndependent(period);
-    var ukI = Stats.ukIndependent(period, isfI.value);
+    var isfI = Stats.isfIndependent(period, all);
+    // опорный ФЧИ для УК — по чистым подколкам, если их хотя бы 3; иначе ФЧИ, использованный в каждом расчёте
+    var ukI = Stats.ukIndependent(period, isfI.events >= 3 ? isfI.value : null, all);
     var curIsf = num(Settings.get('isf'));
     $('#k-indep').innerHTML =
       kcard(t('rep.uk'), ukTxt(ukI.value), '<div class="muted">' + ukGrams(ukI.value) + '</div>' + confHtml(ukI.events)) +
       kcard(t('rep.isf'), isfTxt(isfI.value), confHtml(isfI.events) + curUsing(curIsf ? isfTxt(curIsf) : ''), true);
 
     // --- 3. регрессия
-    var rows = Stats.rowsOf(regrSet);
+    var rows = Stats.rowsOf(regrSet, all);
     var reg = rows.length >= 4 ? Stats.regressJoint(rows) : null;
     var regOk = reg && reg.ok;
     var pLabel = $('#regr').value === 'all' ? t('rep.regrAll') : days + ' ' + (I18N.lang === 'ru' ? 'дн.' : 'days');
     var regMeta = '<div>' + t('rep.method') + ': ' + pLabel + '</div><div>' + t('rep.r2') + ': ' + (reg && reg.r2 != null ? reg.r2.toFixed(3) : '—') + '</div><div>' + t('rep.events') + ': ' + rows.length + '</div>' +
+      (rows.skipped ? '<div class="muted">' + t('rep.skipped') + ': ' + rows.skipped + '</div>' : '') +
       (!regOk && rows.length ? '<div class="muted">' + t('rep.noData') + '</div>' : '');
     $('#k-regr').innerHTML = kcard(t('rep.uk') + ' — ' + t('tab.regression').toLowerCase(), regOk ? ukTxt(reg.uk) : '—', (regOk ? '<div class="muted">' + ukGrams(reg.uk) + '</div>' : '') + regMeta) +
       kcard(t('rep.isf') + ' — ' + t('tab.regression').toLowerCase(), regOk ? isfTxt(reg.isf) : '—', regMeta, true);
 
     // --- 2. по приёмам пищи
-    var isfRef = isfI.value || (regOk ? reg.isf : null);
-    var bm = Stats.byMeal(regrSet, isfRef);
+    // опорный ФЧИ для приёмов пищи: чистые подколки (≥ 3) → регрессия (если получилась) → ФЧИ из самого расчёта
+    var isfRef = isfI.events >= 3 ? isfI.value : (regOk ? reg.isf : null);
+    var bm = Stats.byMeal(regrSet, isfRef, all);
     $('#k-meals').innerHTML = ['breakfast', 'lunch', 'dinner'].map(function (m) {
       var r = bm[m], icon = { breakfast: '🌅', lunch: '☀️', dinner: '🌙' }[m], cur = num(Settings.get('uc_' + m));
       return '<div class="kcard"><h4>' + icon + ' ' + t('meal.' + m) + '</h4>' +
         '<div class="small muted">' + t('rep.uk') + '</div><div class="kval">' + ukTxt(r.value) + '</div><div class="kmeta"><div class="muted">' + ukGrams(r.value) + '</div>' + confHtml(r.events) +
         (r.method ? '<div>' + t('rep.method') + ': ' + (r.method === 'regression' ? t('tab.regression') + (r.r2 != null ? ' (R² ' + r.r2.toFixed(2) + ')' : '') : (I18N.lang === 'ru' ? 'медиана событий' : 'median of events')) + '</div>' : '') +
+        (r.value == null && r.small ? '<div class="muted">' + t('rep.smallMeals', { n: r.small }) + '</div>' : '') +
         curUsing(cur ? cur + ' ' + t('common.units') + '/' + t('common.xe') : '') + '</div>' +
         '<div class="small muted" style="margin-top:10px">' + t('rep.isf') + '</div><div class="kval red" style="font-size:20px">' + isfTxt(r.fchi) + '</div></div>';
     }).join('');
