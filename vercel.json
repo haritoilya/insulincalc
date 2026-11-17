@@ -64,6 +64,19 @@
       ]
     },
     {
+      "source": "/cereal/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
       "source": "/report/(.*)",
       "headers": [
         {

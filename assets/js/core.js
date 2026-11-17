@@ -561,6 +561,7 @@
       h.innerHTML = '<div class="topbar-in"><a class="brand" href="' + (I18N.lang === 'ru' ? '/' : '/en/') + '"><img src="/assets/img/favicon.svg" alt="" width="28" height="28"><span>InsulinCalc</span></a>' +
         '<nav class="nav"><a href="/app/"' + (p === 'app' ? ' class="active"' : '') + '>' + t('nav.calc') + '</a>' +
         '<a href="/report/"' + (p === 'report' ? ' class="active"' : '') + '>' + t('nav.report') + '</a>' +
+        '<a href="/cereal/"' + (p === 'cereal' ? ' class="active"' : '') + '>' + t('nav.cereal') + '</a>' +
         '<a href="' + guide + '" class="hide-sm">' + t('nav.guide') + '</a></nav>' +
         '<div class="right"><button id="outbox-badge" class="badge" style="display:none" onclick="Shell.relogin()"></button>' +
         '<button class="lang-btn" onclick="Shell.toggleLang()" aria-label="language">' + (I18N.lang === 'ru' ? 'EN' : 'RU') + '</button>' + userHtml + '</div></div>';
@@ -708,6 +709,13 @@
       };
     },
 
+    // Лёгкий запуск для страниц-утилит без входа в Google (настройки берутся из localStorage)
+    bootLight: function (page, onReady) {
+      Shell.page = page; Shell.onReady = onReady;
+      I18N.apply(); Shell.renderHeader();
+      var a = $('#app'); if (a) a.style.display = 'block';
+      if (onReady) onReady();
+    },
     boot: function (page, onReady, skipAuthCheck) {
       Shell.page = page; Shell.onReady = onReady;
       I18N.apply();
