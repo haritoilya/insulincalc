@@ -6,8 +6,8 @@
   --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.5}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden}
+body{overflow-x:hidden;margin:0;font-family:var(--font);color:var(--ink);background:var(--bg);line-height:1.5}
 a{color:var(--blue)}
 img{max-width:100%}
 h1,h2,h3{line-height:1.25}
@@ -20,7 +20,8 @@ h1,h2,h3{line-height:1.25}
 .topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid #e8eaed}
 .topbar-in{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:10px 18px}
 .brand{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ink);text-decoration:none;font-size:18px}
-.nav{display:flex;gap:4px;flex:1}
+.nav{display:flex;gap:4px;flex:1;min-width:0}
+.nav a{display:inline-flex;align-items:center;gap:6px}.nav .ni{font-size:18px;line-height:1}
 .nav a{padding:8px 12px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:500;font-size:15px}
 .nav a:hover{background:#f1f3f4}.nav a.active{color:var(--blue);background:var(--blue-l)}
 .right{display:flex;align-items:center;gap:8px}
@@ -35,7 +36,7 @@ h1,h2,h3{line-height:1.25}
 .dropdown a:hover,.dropdown button:hover{background:#f1f3f4}
 .dd-head{padding:10px 12px;border-bottom:1px solid #eee;margin-bottom:4px;font-size:14px;word-break:break-all}
 .demo-bar{display:none;background:#fff8e1;color:#5d4037;text-align:center;padding:8px 14px;font-size:14px;border-bottom:1px solid #ffe082}
-@media(max-width:640px){.hide-sm{display:none}.nav a{padding:8px 8px;font-size:14px}.brand span{display:none}}
+@media(max-width:640px){.hide-sm,.nav a.hide-sm{display:none}.nav a{padding:8px 10px}.nav .nl{display:none}.nav .ni{font-size:22px}.brand span{display:none}.topbar-in{gap:8px;padding:8px 12px}.nav{justify-content:center}}
 
 /* ---------- buttons ---------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 20px;border-radius:10px;font-size:16px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:.15s;text-align:center;text-decoration:none;font-family:inherit;line-height:1.3}

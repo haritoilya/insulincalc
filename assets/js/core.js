@@ -543,25 +543,24 @@
       var h = $('#topbar'); if (!h) return;
       var u = Auth.user(), mode = ls('ic_mode');
       var p = Shell.page;
-      // ⚙️ Настройки — всегда видимая кнопка в шапке (и в демо, и после входа через Google)
-      var gear = '<button class="btn-sm" onclick="Shell.openSettings()" title="' + t('nav.settings') + '" aria-label="' + t('nav.settings') + '">⚙️</button>';
       var userHtml = '';
       if (mode === 'google' && u) {
-        userHtml = gear + '<div class="user-menu"><button class="avatar-btn" id="user-btn" aria-haspopup="true">' +
+        userHtml = '<div class="user-menu"><button class="avatar-btn" id="user-btn" aria-haspopup="true">' +
           (u.picture ? '<img src="' + esc(u.picture) + '" alt="" referrerpolicy="no-referrer">' : '<span>' + esc((u.name || u.email || '?')[0]) + '</span>') + '</button>' +
           '<div class="dropdown" id="user-dd"><div class="dd-head"><b>' + esc(u.name || '') + '</b><br><small>' + esc(u.email || '') + '</small></div>' +
           (Store.current && Store.current.url ? '<a href="' + esc(Store.current.url) + '" target="_blank" rel="noopener">📄 ' + t('nav.sheet') + '</a>' : '') +
           '<button onclick="Shell.setupSheet(true)">🔁 ' + t('nav.switchSheet') + '</button>' +
           '<button onclick="Shell.openSettings()">⚙️ ' + t('nav.settings') + '</button>' +
           '<button onclick="Shell.signOut()">🚪 ' + t('nav.signout') + '</button></div></div>';
-      } else if (mode === 'demo') {
-        userHtml = gear;
+      }
+      // пункты меню: иконка + подпись; на телефоне остаётся только иконка
+      function navLink(href, id, icon, label) {
+        return '<a href="' + href + '"' + (p === id ? ' class="active"' : '') + ' title="' + esc(label) + '" aria-label="' + esc(label) + '"><span class="ni">' + icon + '</span><span class="nl">' + esc(label) + '</span></a>';
       }
       var guide = I18N.lang === 'ru' ? '/kak-rasschitat-dozu-insulina/' : '/en/insulin-dose-guide/';
       h.innerHTML = '<div class="topbar-in"><a class="brand" href="' + (I18N.lang === 'ru' ? '/' : '/en/') + '"><img src="/assets/img/favicon.svg" alt="" width="28" height="28"><span>InsulinCalc</span></a>' +
-        '<nav class="nav"><a href="/app/"' + (p === 'app' ? ' class="active"' : '') + '>' + t('nav.calc') + '</a>' +
-        '<a href="/report/"' + (p === 'report' ? ' class="active"' : '') + '>' + t('nav.report') + '</a>' +
-        '<a href="/cereal/"' + (p === 'cereal' ? ' class="active"' : '') + '>' + t('nav.cereal') + '</a>' +
+        '<nav class="nav">' + navLink('/app/', 'app', '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="3" fill="#5f6368"/><rect x="7" y="5" width="10" height="4" rx="1" fill="#cfe3ff"/><g fill="#fff"><circle cx="8.5" cy="12.5" r="1.2"/><circle cx="12" cy="12.5" r="1.2"/><circle cx="15.5" cy="12.5" r="1.2"/><circle cx="8.5" cy="16" r="1.2"/><circle cx="12" cy="16" r="1.2"/><circle cx="8.5" cy="19.2" r="1.2"/><circle cx="12" cy="19.2" r="1.2"/></g><rect x="14.3" y="14.8" width="2.4" height="5.6" rx="1.2" fill="#34a853"/></svg>', t('nav.calc')) + navLink('/report/', 'report', '📊', t('nav.report')) +
+        navLink('/cereal/', 'cereal', '🥣', t('nav.cereal')) +
         '<a href="' + guide + '" class="hide-sm">' + t('nav.guide') + '</a></nav>' +
         '<div class="right"><button id="outbox-badge" class="badge" style="display:none" onclick="Shell.relogin()"></button>' +
         '<button class="lang-btn" onclick="Shell.toggleLang()" aria-label="language">' + (I18N.lang === 'ru' ? 'EN' : 'RU') + '</button>' + userHtml + '</div></div>';
