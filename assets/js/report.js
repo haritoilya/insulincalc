@@ -105,6 +105,7 @@
   function loadCgm() {
     return Store.cgmDaily().then(function (d) { cgm = d; }).catch(function () { cgm = null; });
   }
+  var GMI_AXIS_MIN = 6.2, GMI_AXIS_MAX = 7.5; // границы оси GMI справа, %
   var WCOV_MIN = 70; // меньше этой доли данных в 90-дневном окне — GMI неполный (рисуется пунктиром)
 
   function renderCharts(daily, period) {
@@ -160,7 +161,10 @@
         { fill: false, tension: 0.35, borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, wcov: wcovData, order: -1,
           // участки, где данных в 90-дневном окне меньше WCOV_MIN %, — пунктиром (GMI неполный)
           segment: { borderDash: function (ctx) { var w = wcovData[ctx.p1DataIndex]; return w != null && w < WCOV_MIN ? [6, 4] : undefined; } } }));
-      extraScales.y2 = { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { callback: function (v) { return v.toFixed(2); } } };
+      // Ось GMI фиксирована: 6,2 … 7,5 %. Если значения вдруг выходят за эти границы, ось расширяется, чтобы кривую не обрезало.
+      var gv = gmiData.filter(function (v) { return v != null; });
+      extraScales.y2 = { position: 'right', min: Math.min(GMI_AXIS_MIN, Math.floor(Math.min.apply(null, gv) * 10) / 10), max: Math.max(GMI_AXIS_MAX, Math.ceil(Math.max.apply(null, gv) * 10) / 10),
+        grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { stepSize: 0.1, autoSkip: false, callback: function (v) { return v.toFixed(1); } } };
     }
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
       legend: { position: 'top' },
