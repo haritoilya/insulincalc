@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var $ = IC.$, esc = IC.esc, num = IC.num;
-  var all = [], charts = {}, last = null, cgm = null; // cgm: суточные данные с сервера датчика (или null)
+  var all = [], charts = {}, last = null, cgm = null; // cgm: суточные данные датчика из листа CGM_daily (или null)
   var DAY = 86400000;
 
   function conf(n) { if (!n || n <= 0) return 0; if (n >= 10) return 100; if (n >= 5) return 75; if (n >= 3) return 50; return 25; }
@@ -101,26 +101,11 @@
   }
   function lbl(day) { var p = day.split('-'); return p[2] + '.' + p[1]; }
 
-  function dkey(d) { return IC.mskDay(d); } // день по московскому времени
-  // Средняя (ммоль/л) по данным CGM за `win` дней, заканчивая днём каждой даты из `ends`
-  function cgmMeans(ends, win) {
-    var by = {}; cgm.days.forEach(function (d) { by[d.day] = d; });
-    return ends.map(function (end) {
-      var s = 0, n = 0, d = new Date(end);
-      for (var i = 0; i < win; i++) { var r = by[dkey(d)]; if (r) { s += r.sum; n += r.n; } d = new Date(d.getTime() - 86400000); }
-      return n ? s / n : null;
-    });
+  // Суточные данные датчика из листа CGM_daily (GMI за 90 дней уже посчитан на сервере). Нет листа — null, график по замерам таблицы.
+  function loadCgm() {
+    return Store.cgmDaily().then(function (d) { cgm = d; }).catch(function () { cgm = null; });
   }
-  // Загрузка суточных данных с сервера датчика через прокси сайта (/api/cgm). Ошибка — не страшно: GMI по таблице.
-  function loadCgm(days) {
-    var tok = Auth.tok && Auth.tok();
-    if (!tok || ls0('ic_mode') !== 'google') { cgm = null; return Promise.resolve(); }
-    return fetch('/api/cgm?days=' + (days + 90) + '&tz=-180', { headers: { Authorization: 'Bearer ' + tok } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { cgm = j && j.days ? j : null; })
-      .catch(function () { cgm = null; });
-  }
-  function ls0(k) { return IC.ls(k); }
+  var WCOV_MIN = 70; // меньше этой доли данных в 90-дневном окне — GMI неполный (рисуется пунктиром)
 
   function renderCharts(daily, period) {
     var labels = daily.map(function (d) { return lbl(d.day); });
@@ -148,30 +133,43 @@
       gl.push(ds('+' + rg, rd.map(function () { return Units.toDisp(tg + rg); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
       gl.push(ds('−' + rg, rd.map(function () { return Units.toDisp(Math.max(0, tg - rg)); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
     }
-    // GMI по дням: для каждого дня — средняя глюкоза за 90 дней до конца этого дня.
-    // Источник — сервер датчика (CGM, /api/cgm), если подключён; иначе замеры из таблицы.
-    // Одна точка на день, на последнем замере дня; ось справа, %.
-    var allRd = Stats.readings(all), dayEnd = {}, lastIdx = {};
-    rd.forEach(function (r, i) {
-      var d = IC.mskDayEnd(r.t);
-      var k = d.getTime(); dayEnd[i] = d; lastIdx[k] = i;
-    });
-    var idxs = Object.keys(lastIdx).map(function (k) { return lastIdx[k]; }).sort(function (x, y) { return x - y; });
-    var useCgm = !!(cgm && cgm.days && cgm.days.length);
-    var means = useCgm ? cgmMeans(idxs.map(function (i) { return dayEnd[i]; }), 90)
-      : Stats.rollingMean(allRd, idxs.map(function (i) { return dayEnd[i]; }), 90);
-    var gmiData = rd.map(function () { return null; }), meanData = rd.map(function () { return null; }), lastG = null;
-    idxs.forEach(function (i, j) { if (means[j] != null) { meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
+    // GMI по дням (ось справа, %). Источник — лист CGM_daily (данные датчика, GMI за 90 дней посчитан на сервере);
+    // нет листа — по замерам из таблицы. Одна точка на день, на последнем замере этого дня.
+    var allRd = Stats.readings(all), lastIdx = {}, dayEnd = {};
+    rd.forEach(function (r, i) { var k = IC.mskDay(r.t); lastIdx[k] = i; dayEnd[k] = IC.mskDayEnd(r.t); });
+    var dayKeys = Object.keys(lastIdx);
+    var gmiData = rd.map(function () { return null; }), meanData = rd.map(function () { return null; }), wcovData = rd.map(function () { return null; }), lastG = null;
+    var useCgm = !!cgm;
+    if (useCgm) {
+      // Полнота 90-дневного окна: на сервере она считается относительно накопленной истории (в начале — одни сутки = «100%»),
+      // поэтому здесь приводим к полным 90 суткам: данные × (накопленные дни / 90)
+      var firstDay = Date.parse(Object.keys(cgm).sort()[0] + 'T00:00:00Z');
+      dayKeys.forEach(function (k) {
+        var row = cgm[k]; if (!row || row.gmi == null) return;
+        var span = Math.min(90, Math.round((Date.parse(k + 'T00:00:00Z') - firstDay) / 86400000) + 1);
+        var i = lastIdx[k]; gmiData[i] = Math.round(row.gmi * 100) / 100; meanData[i] = row.mean90;
+        wcovData[i] = row.wcov != null ? row.wcov * span / 90 : null; lastG = gmiData[i];
+      });
+    } else {
+      var means = Stats.rollingMean(allRd, dayKeys.map(function (k) { return dayEnd[k]; }), 90);
+      dayKeys.forEach(function (k, j) { if (means[j] != null) { var i = lastIdx[k]; meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
+    }
     var extraScales = {};
     if (lastG != null) {
       gl.push(ds(t(useCgm ? 'ch.gmiCgm' : 'ch.gmi') + ' · ' + lastG.toFixed(1) + '%', gmiData, '#0d1b5e',
-        { fill: false, tension: 0.35, borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, order: -1 }));
+        { fill: false, tension: 0.35, borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, wcov: wcovData, order: -1,
+          // участки, где данных в 90-дневном окне меньше WCOV_MIN %, — пунктиром (GMI неполный)
+          segment: { borderDash: function (ctx) { var w = wcovData[ctx.p1DataIndex]; return w != null && w < WCOV_MIN ? [6, 4] : undefined; } } }));
       extraScales.y2 = { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { callback: function (v) { return v.toFixed(2); } } };
     }
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
       legend: { position: 'top' },
       tooltip: { filter: function (c) { return c.raw != null; }, callbacks: { label: function (c) {
-        if (c.dataset.yAxisID === 'y2') return 'GMI: ' + c.raw.toFixed(2) + '% (' + t('ch.avg90') + ': ' + Units.g(c.dataset.mean[c.dataIndex]) + ' ' + Units.gLabel() + ')';
+        if (c.dataset.yAxisID === 'y2') {
+          var w = c.dataset.wcov && c.dataset.wcov[c.dataIndex];
+          return 'GMI: ' + c.raw.toFixed(2) + '% (' + t('ch.avg90') + ': ' + Units.g(c.dataset.mean[c.dataIndex]) + ' ' + Units.gLabel() +
+            (w != null ? '; ' + t('ch.dataIn90') + ': ' + Math.round(w) + '%' + (w < WCOV_MIN ? ' — ' + t('ch.partial') : '') : '') + ')';
+        }
         return c.dataset.label + ': ' + c.formattedValue;
       } } } } }, scales: extraScales });
   }
@@ -217,14 +215,14 @@
     Store.events(true).then(function (list) {
       all = list;
       if (Store.current.url) { var o = $('#open-sheet'); o.href = Store.current.url; o.style.display = 'inline-flex'; }
-      return loadCgm(repDays()).then(build);
+      return loadCgm().then(build);
     }).catch(function (e) { Shell.handleError(e); });
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     var saved = IC.ls('ic_rep_days'); if (saved) $('#days').value = saved;
     Shell.boot('report', onReady);
-    $('#build').onclick = function () { IC.ls('ic_rep_days', $('#days').value); Store.events(true).then(function (l) { all = l; return loadCgm(repDays()); }).then(build); };
+    $('#build').onclick = function () { IC.ls('ic_rep_days', $('#days').value); Store.events(true).then(function (l) { all = l; return loadCgm(); }).then(build); };
     $('#days').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('#build').click(); });
     $('#csv').onclick = csv;
     document.querySelectorAll('.tab-btn').forEach(function (b) {

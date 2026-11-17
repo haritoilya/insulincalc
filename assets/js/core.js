@@ -399,6 +399,24 @@
         .then(function () { Object.assign(e, patch); return e; });
     });
   };
+  // Лист CGM_daily — суточные средние глюкозы и GMI за 90 дней по данным датчика (заполняется сервером).
+  // Возвращает { 'ГГГГ-ММ-ДД': {mean, cov, gmi, mean90, wcov} } или null, если листа нет / он пуст.
+  SheetStore.prototype.getCgmDaily = function () {
+    return api(SHEETS + this.id + '/values/' + rng('CGM_daily', 'A1:G3000') + '?valueRenderOption=UNFORMATTED_VALUE').then(function (r) {
+      var v = r.values || []; if (v.length < 2) return null;
+      var h = v[0], col = function (n) { return h.indexOf(n); };
+      if (col('date_msk') < 0 || col('gmi_90d_pct') < 0) return null;
+      var out = {}, n = 0;
+      v.slice(1).forEach(function (row) {
+        var d = String(row[col('date_msk')] == null ? '' : row[col('date_msk')]).trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+        out[d] = { mean: num(row[col('mean_mmol_l')]), cov: num(row[col('coverage_pct')]), gmi: num(row[col('gmi_90d_pct')]),
+                   mean90: num(row[col('mean_90d_mmol_l')]), wcov: num(row[col('window_coverage_pct')]) };
+        n++;
+      });
+      return n ? out : null;
+    }).catch(function () { return null; }); // нет листа или нет доступа — отчёт строится по замерам из таблицы
+  };
   SheetStore.prototype.getSettings = function () {
     return api(SHEETS + this.id + '/values/' + rng('Settings', 'A1:B60') + '?valueRenderOption=UNFORMATTED_VALUE').then(function (r) {
       var o = {}; (r.values || []).forEach(function (row) { if (row[0]) o[row[0]] = row[1]; }); return o;
@@ -424,6 +442,7 @@
     if (e) Object.assign(e, patch); ls('ic_demo_events', a); return Promise.resolve(e);
   };
   DemoStore.prototype.saveSettings = function (o) { ls('ic_demo_settings', o); return Promise.resolve(); };
+  DemoStore.prototype.getCgmDaily = function () { return Promise.resolve(null); };
 
   // ---------------------------------------------------------------- очередь: если нет сети или истёк вход — запись не теряется
   var Outbox = {
@@ -465,6 +484,7 @@
         Outbox.push({ op: 'update', id: id, patch: patch }); Shell.handleError(e, true); return null;
       });
     },
+    cgmDaily: function () { return Store.current && Store.current.getCgmDaily ? Store.current.getCgmDaily() : Promise.resolve(null); },
     uid: uid
   };
 

@@ -117,25 +117,6 @@
           "value": "noindex"
         }
       ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        },
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/cgm/",
-      "destination": "/api/cgm"
     }
   ]
 }
