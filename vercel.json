@@ -26,28 +26,6 @@
       "source": "/ru/",
       "destination": "/",
       "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "vidgenlab.pro"
-        }
-      ],
-      "destination": "https://insulincalc.online/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.vidgenlab.pro"
-        }
-      ],
-      "destination": "https://insulincalc.online/:path*",
-      "permanent": true
     }
   ],
   "headers": [
