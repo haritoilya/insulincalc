@@ -35,7 +35,18 @@
           "value": "vidgenlab.pro"
         }
       ],
-      "destination": "https://www.vidgenlab.pro/:path*",
+      "destination": "https://insulincalc.online/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.vidgenlab.pro"
+        }
+      ],
+      "destination": "https://insulincalc.online/:path*",
       "permanent": true
     }
   ],

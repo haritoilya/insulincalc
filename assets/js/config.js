@@ -15,7 +15,7 @@ window.APP_CONFIG = {
   GOOGLE_APP_ID: '207213151715',
 
   // Основной адрес сайта (для ссылок в письмах и канонических URL)
-  SITE_URL: 'https://www.vidgenlab.pro',
+  SITE_URL: 'https://insulincalc.online',
 
   // Метка, по которой сайт находит «свои» таблицы в Google Drive пользователя
   APP_TAG: 'insulincalc',

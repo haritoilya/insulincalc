@@ -1,4 +1,4 @@
-# InsulinCalc — www.vidgenlab.pro
+# InsulinCalc — insulincalc.online
 
 Калькулятор дозы инсулина и дневник диабета 1 типа. Статический сайт без собственного сервера:
 браузер пользователя через Google OAuth (scope `drive.file`) пишет данные в **его собственную Google Таблицу**.
