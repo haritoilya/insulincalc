@@ -156,10 +156,10 @@
       dayKeys.forEach(function (k, j) { if (means[j] != null) { var i = lastIdx[k]; meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
     }
     // GMI-область лежит под линиями глюкозы; деления правой оси совпадают с горизонтальными линиями сетки слева:
-    // шаг 0,3 % GMI = 1 ммоль/л глюкозы, 6,2 % лежит на уровне 10 ммоль/л. Линии глюкозы могут заходить на область.
-    // GMI: 6,2–6,5 % — зелёная зона (цель), выше 6,5 % — розоватая (до верха графика).
-    var BAND_LO = 10, GMI_STEP = 0.3;
-    var gLo = Units.toDisp(AXIS_MIN), gHi = Units.toDisp(AXIS_MAX), gBand = Units.toDisp(BAND_LO);
+    // шаг 0,3 % GMI = 1 ммоль/л глюкозы, 6,2 % лежит на уровне 12 ммоль/л. Линии глюкозы могут заходить на область.
+    // GMI: 5,6–6,5 % — зелёная зона (цель), выше 6,5 % — розоватая (до верха графика).
+    var BAND_LO = 12, GMI_STEP = 0.3, GREEN_LO_G = 10;   // 6,2 % на уровне 12 ммоль/л; зелёная зона начинается с 5,6 % (уровень 10)
+    var gLo = Units.toDisp(AXIS_MIN), gHi = Units.toDisp(AXIS_MAX), gBand = Units.toDisp(BAND_LO), gGreen = Units.toDisp(GREEN_LO_G);
     var gvAll = gmiData.filter(function (v) { return v != null; });
     var mLo = GMI_AXIS_MIN;                                         // 6,2 %
     var perMmol = GMI_STEP;                                         // % GMI на 1 ммоль/л
@@ -179,7 +179,7 @@
       extraScales.y2 = { position: 'right', min: y2Min, max: y2Max, grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %', align: 'end' },
         afterBuildTicks: function (sc) {
           // деления ровно напротив линий сетки слева: 6,2 + k·0,3 для каждого деления левой оси (4 … 17 ммоль/л)
-          sc.ticks = gTicks.filter(function (g) { return g >= gBand && g <= gHi; }).map(function (g) { return { value: Math.round((mLo + (g - gBand) * perDisp) * 100) / 100 }; });
+          sc.ticks = gTicks.filter(function (g) { return g >= gGreen && g <= gHi; }).map(function (g) { return { value: Math.round((mLo + (g - gBand) * perDisp) * 100) / 100 }; });
         },
         ticks: { autoSkip: false, callback: function (v) { return v.toFixed(1); } } };
     }
@@ -190,7 +190,7 @@
         var a = c.chartArea, ctx = c.ctx, band = function (from, to, color) {
           var p1 = y2.getPixelForValue(from), p2 = y2.getPixelForValue(to); ctx.fillStyle = color; ctx.fillRect(a.left, Math.min(p1, p2), a.right - a.left, Math.abs(p1 - p2));
         };
-        ctx.save(); band(mLo, 6.5, 'rgba(52,168,83,0.15)'); band(6.5, mHi, 'rgba(244,143,100,0.18)'); ctx.restore();
+        ctx.save(); band(mLo + (gGreen - gBand) * perDisp, 6.5, 'rgba(52,168,83,0.15)'); band(6.5, mHi, 'rgba(244,143,100,0.18)'); ctx.restore();
       }
     };
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, chartPlugins: [zonePlugin], extra: { plugins: {
