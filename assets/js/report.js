@@ -128,12 +128,12 @@
       ds(t('ch.xe'), daily.map(function (d) { return d.any ? r1(d.xe) : null; }), '#34a853', area)
     ], u + ' / ' + t('common.xe'));
     var rd = Stats.readings(period);
-    var tg = num(Settings.get('target')), rg = num(Settings.get('range')) || 2;
+    // Целевая зона 4–9 ммоль/л: зелёные пунктирные границы и заливка между ними (границы и ось хранятся в ммоль/л, показ — в единицах пользователя)
+    var ZONE_LO = 4, ZONE_HI = 9, AXIS_MIN = 3.5, AXIS_MAX = 17;
     var gl = [ds(t('ch.glucoseL') + ' (' + Units.gLabel() + ')', rd.map(function (r) { return Units.toDisp(r.v); }), '#7b1fa2', { fill: false, tension: 0.2 })];
-    if (tg) {
-      gl.push(ds('+' + rg, rd.map(function () { return Units.toDisp(tg + rg); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
-      gl.push(ds('−' + rg, rd.map(function () { return Units.toDisp(Math.max(0, tg - rg)); }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
-    }
+    var zl = Units.toDisp(ZONE_LO), zh = Units.toDisp(ZONE_HI);
+    gl.push(ds(String(zl), rd.map(function () { return zl; }), '#34a853', { fill: false, borderDash: [6, 4], pointRadius: 0, borderWidth: 1, zoneLow: true }));
+    gl.push(ds(zl + '–' + zh + ' ' + Units.gLabel(), rd.map(function () { return zh; }), '#34a853', { fill: '-1', backgroundColor: 'rgba(52,168,83,0.15)', borderDash: [6, 4], pointRadius: 0, borderWidth: 1 }));
     // GMI по дням (ось справа, %). Источник — лист CGM_daily (данные датчика, GMI за 90 дней посчитан на сервере);
     // нет листа — по замерам из таблицы. Одна точка на день, на последнем замере этого дня.
     var allRd = Stats.readings(all), lastIdx = {}, dayEnd = {};
@@ -155,7 +155,10 @@
       var means = Stats.rollingMean(allRd, dayKeys.map(function (k) { return dayEnd[k]; }), 90);
       dayKeys.forEach(function (k, j) { if (means[j] != null) { var i = lastIdx[k]; meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
     }
-    var extraScales = {};
+    var extraScales = { y: { min: Units.toDisp(AXIS_MIN), max: Units.toDisp(AXIS_MAX), title: { display: true, text: Units.gLabel() },
+      // деления через 1 ммоль/л (4 … 17), чтобы границы зоны 4 и 9 были подписаны
+      afterBuildTicks: Units.isMg() ? undefined : function (sc) { var a = []; for (var v = 4; v <= AXIS_MAX; v++) a.push({ value: v }); sc.ticks = a; },
+      ticks: { autoSkip: false } } };
     if (lastG != null) {
       gl.push(ds(t(useCgm ? 'ch.gmiCgm' : 'ch.gmi') + ' · ' + lastG.toFixed(1) + '%', gmiData, '#0d1b5e',
         { fill: false, tension: 0.35, borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, wcov: wcovData, order: -1,
@@ -167,8 +170,8 @@
         grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %' }, ticks: { stepSize: 0.1, autoSkip: false, callback: function (v) { return v.toFixed(1); } } };
     }
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, extra: { plugins: {
-      legend: { position: 'top' },
-      tooltip: { filter: function (c) { return c.raw != null; }, callbacks: { label: function (c) {
+      legend: { position: 'top', labels: { filter: function (it, d) { return !d.datasets[it.datasetIndex].zoneLow; } } },
+      tooltip: { filter: function (c) { return c.raw != null && !c.dataset.zoneLow; }, callbacks: { label: function (c) {
         if (c.dataset.yAxisID === 'y2') {
           var w = c.dataset.wcov && c.dataset.wcov[c.dataIndex];
           return 'GMI: ' + c.raw.toFixed(2) + '% (' + t('ch.avg90') + ': ' + Units.g(c.dataset.mean[c.dataIndex]) + ' ' + Units.gLabel() +
