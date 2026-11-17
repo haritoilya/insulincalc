@@ -21,7 +21,7 @@
 | `vercel.json` | Настройки Vercel: редиректы `/sasha → /app/`, заголовки, noindex для *.vercel.app |
 | `robots.txt`, `sitemap.xml`, `manifest.webmanifest` | SEO / PWA |
 
-## Схема листа `Events`
+## Схема листа `Data`
 
 Колонки листа (31, в порядке рабочей таблицы): `timestamp, user_id, event_type, event_subtype, target_glucose, current_glucose, uc, carbs_he, carbs_grams, compensation_dose, food_insulin, total_raw, dose_down, dose_up, selected_dose, rounding_choice, predicted_down, predicted_up, pause_minutes, pen_step, correction_factor, weight, glucose_2h, glucose_2h_timestamp, glucose_4h, glucose_4h_timestamp, notes, timestamp_w, timestamp_moscow, event_id, event_status`. Время: `timestamp` и `glucose_*_timestamp` — московское (`15.11.2026, 12:10`), от него считаются замеры через 2 и 4 ч (в т.ч. автозаполнение с сервера Juggluco); `timestamp_moscow` — местное время в часовом поясе, выбранном в начале расчёта (по умолчанию — пояс устройства; название поля временное), `timestamp_w` — то же время в UTC («время 0»). Статус после обоих замеров — `completed`. Числа записываются как числа, вводить можно через точку или запятую. Приём пищи распознаётся без учёта регистра и языка: `завтрак` = `breakfast`, `обед` = `lunch`, `ужин` = `dinner`. Старые записи с прежними названиями колонок читаются автоматически.
 Глюкоза хранится в ммоль/л, углеводы — в граммах (и ХЕ). Лист `Settings` — настройки (ключ/значение).

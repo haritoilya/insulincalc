@@ -249,13 +249,13 @@
         method: 'POST', body: {
           properties: { title: title, locale: I18N.lang === 'ru' ? 'ru_RU' : 'en_US' },
           sheets: [
-            { properties: { sheetId: 1, title: 'Events', gridProperties: { frozenRowCount: 1 } } },
+            { properties: { sheetId: 1, title: 'Data', gridProperties: { frozenRowCount: 1 } } },
             { properties: { sheetId: 2, title: 'Settings' } }
           ]
         }
       }).then(function (ss0) {
         var id = ss0.spreadsheetId;
-        return api(SHEETS + id + '/values/' + rng('Events', 'A1') + '?valueInputOption=RAW', { method: 'PUT', body: { values: [HEADERS] } })
+        return api(SHEETS + id + '/values/' + rng('Data', 'A1') + '?valueInputOption=RAW', { method: 'PUT', body: { values: [HEADERS] } })
           .then(function () {
             return api(SHEETS + id + ':batchUpdate', { method: 'POST', body: { requests: [{ repeatCell: { range: { sheetId: 1, startRowIndex: 0, endRowIndex: 1 }, cell: { userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.91, green: 0.94, blue: 1 } } }, fields: 'userEnteredFormat(textFormat,backgroundColor)' } }] } }).catch(function () {});
           })
@@ -276,7 +276,7 @@
           });
           var p = Promise.resolve();
           if (!found) {
-            found = titles.indexOf('Events') >= 0 ? 'InsulinCalc Events' : 'Events';
+            found = titles.indexOf('Data') >= 0 ? 'InsulinCalc Data' : 'Data';
             header = HEADERS.slice();
             p = api(SHEETS + id + ':batchUpdate', { method: 'POST', body: { requests: [{ addSheet: { properties: { title: found, gridProperties: { frozenRowCount: 1 } } } }] } })
               .then(function () { return api(SHEETS + id + '/values/' + rng(found, 'A1') + '?valueInputOption=RAW', { method: 'PUT', body: { values: [HEADERS] } }); });
@@ -329,7 +329,7 @@
 
   function SheetStore(info) {
     this.mode = 'google'; this.id = info.id; this.url = info.url || ('https://docs.google.com/spreadsheets/d/' + info.id + '/edit');
-    this.name = info.name || ''; this.sheet = info.sheet || 'Events'; this.header = null; this.events = null;
+    this.name = info.name || ''; this.sheet = info.sheet || 'Data'; this.header = null; this.events = null;
   }
   SheetStore.prototype.load = function () {
     var self = this;
@@ -338,7 +338,10 @@
       var titles = meta.sheets.map(function (s) { return s.properties.title; });
       if (titles.indexOf(self.sheet) < 0) {
         // таблица могла быть переименована — ищем лист с event_id
-        return Drive.connect(self.id).then(function (c) { self.sheet = c.sheet; });
+        return Drive.connect(self.id).then(function (c) {
+          self.sheet = c.sheet;
+          var key = Shell.sheetKey(), saved = ls(key); if (saved) { saved.sheet = c.sheet; ls(key, saved); }
+        });
       }
     }).then(function () { return self.getSettings(); }).then(function (s) { Settings.merge(s); return self.listEvents(true); });
   };
