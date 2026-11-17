@@ -50,6 +50,16 @@
   }
   function G() { return Units.xeG(); }
 
+  // последние введённые данные по каждой ветке (тип + режим)
+  var LS_KEY = 'ic_cereal_last';
+  function loadAll() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; } }
+  function branch() { return S.kind + ':' + S.mode; }
+  function saved() { return loadAll()[branch()] || {}; }
+  function remember(id, n) {
+    try { var all = loadAll(), b = all[branch()] || {}; b[id] = n; all[branch()] = b; localStorage.setItem(LS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+  function val(id) { return S.v[id] != null ? S.v[id] : saved()[id]; }
+
   var S;  // состояние: {kind, mode, step, v:{}}
   function reset() { S = { kind: null, mode: null, step: 0, v: {} }; }
 
@@ -86,12 +96,12 @@
   }
 
   function view(h) { $('#view').innerHTML = h; var i = $('#cr-in'); if (i) i.focus(); }
-  function backBtn() { return '<button class="btn ghost" id="cr-back">← ' + t('btn.back') + '</button>'; }
+  function backBtn() { return '<button class="btn cancel" id="cr-back">' + t('btn.back') + '</button>'; }
 
   function home() {
     reset();
-    view('<p class="step-q">' + t('cr.chooseType') + '</p>' +
-      ['cereal', 'milk', 'product'].map(function (k) { return '<button class="btn secondary block" data-k="' + k + '">' + t('cr.type.' + k) + '</button>'; }).join('') +
+    view('<p class="step-q">' + t('cr.chooseType') + '</p><div class="grid1">' +
+      ['cereal', 'milk', 'product'].map(function (k) { return '<button class="btn secondary" data-k="' + k + '">' + t('cr.type.' + k) + '</button>'; }).join('') + '</div>' +
       '<button class="btn ghost block" id="cr-help">' + t('cr.help') + '</button>');
     document.querySelectorAll('[data-k]').forEach(function (b) {
       b.onclick = function () { S.kind = b.dataset.k; if (S.kind === 'product') { S.mode = 'full'; ask(); } else modeStep(); };
@@ -100,9 +110,9 @@
   }
 
   function modeStep() {
-    view('<p class="step-q">' + t('cr.mode.' + S.kind) + '</p>' +
-      '<button class="btn secondary block" data-m="carbs">' + t('cr.mode.carbs') + '</button>' +
-      '<button class="btn secondary block" data-m="full">' + t('cr.mode.full') + '</button>' + backBtn());
+    view('<p class="step-q">' + t('cr.mode.' + S.kind) + '</p><div class="grid1">' +
+      '<button class="btn secondary" data-m="carbs">' + t('cr.mode.carbs') + '</button>' +
+      '<button class="btn secondary" data-m="full">' + t('cr.mode.full') + '</button></div>' + backBtn());
     document.querySelectorAll('[data-m]').forEach(function (b) { b.onclick = function () { S.mode = b.dataset.m; S.step = 0; ask(); }; });
     $('#cr-back').onclick = home;
   }
@@ -120,11 +130,13 @@
   function ask(err) {
     var a = steps(), st = a[S.step];
     var q = st.q === 'gross' ? t(S.v.tare > 0 ? 'cr.q.gross' : 'cr.q.grossNo') : t(st.q, { obj: st.obj ? t(st.obj) : '', what: st.what ? t(st.what) : '' });
-    var v = S.v[st.id];
+    var v = val(st.id), unit = /^m?k$/.test(st.id) ? t('cr.u.kcal') : t('common.g');
     view('<div class="step"><p class="step-hint">' + t('cr.step', { n: S.step + 1, m: a.length }) + '</p><p class="step-q">' + esc(q) + '</p>' +
-      '<input id="cr-in" class="input" type="text" inputmode="decimal" autocomplete="off" value="' + (v == null ? '' : esc(String(v).replace('.', I18N.lang === 'ru' ? ',' : '.'))) + '">' +
-      '<div class="err" id="cr-err" style="color:#c62828;font-size:13px;min-height:18px;margin:6px 0">' + (err || '') + '</div>' + hint() +
-      '<div class="row" style="display:flex;gap:8px">' + backBtn() + '<button class="btn primary" id="cr-next" style="flex:1">' + t('btn.next') + '</button></div></div>');
+      '<div class="input-wrap"><input id="cr-in" class="num-input" type="text" inputmode="decimal" autocomplete="off" value="' + (v == null ? '' : esc(String(v).replace('.', I18N.lang === 'ru' ? ',' : '.'))) + '">' +
+      '<span class="input-unit">' + unit + '</span></div>' +
+      '<div class="err" id="cr-err">' + (err || '') + '</div>' + hint() +
+      '<div class="row">' + backBtn() + '<button class="btn primary" id="cr-next">' + t('btn.next') + '</button></div></div>');
+    if ($('#cr-in').value) $('#cr-in').select();
     $('#cr-back').onclick = function () { if (S.step === 0) { S.kind === 'product' ? home() : modeStep(); } else { S.step--; ask(); } };
     var go = function () {
       var n = parse($('#cr-in').value);
@@ -133,7 +145,7 @@
       if (n > st.max) return ask(t('cr.err.range', { min: st.gt0 ? '>0' : 0, max: st.max }));
       if (st.id === 'gross' && n <= S.v.tare) return ask(t('cr.err.gross'));
       if (st.id === 'portion' && n > cooked()) return ask(t('cr.err.portion', { w: fmt(cooked()) }));
-      S.v[st.id] = n;
+      S.v[st.id] = n; remember(st.id, n);
       if (S.step + 1 < a.length) { S.step++; ask(); } else result();
     };
     $('#cr-next').onclick = go;
@@ -174,7 +186,7 @@
       L.push('<span class="muted">' + t('cr.r.per100', { c: fmt(r.per100.c, 2), x: fmt(r.xe100, 2) }) + '</span>');
     }
     view('<div id="cr-res" class="note" style="line-height:1.7">' + L.join('<br>') + '</div>' +
-      '<button class="btn primary block" id="cr-new">' + t('cr.new') + '</button>' + backBtn());
+      '<button class="btn primary block" id="cr-new">' + t('cr.new') + '</button><div class="row">' + backBtn() + '</div>');
     $('#cr-new').onclick = home;
     $('#cr-back').onclick = function () { S.step = steps().length - 1; ask(); };
   }

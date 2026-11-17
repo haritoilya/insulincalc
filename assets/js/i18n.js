@@ -2,7 +2,7 @@
 (function () {
   var DICT = {
     ru: {
-      'nav.cereal': 'Углеводы в кашах',
+      'nav.cereal': 'Углеводы в кашах', 'cr.u.kcal': 'ккал',
       'cr.h1': '🥣 Углеводы в кашах', 'cr.sub': 'Углеводы, ХЕ и БЖУ порции — по упаковке и весу готового блюда',
       'cr.xe': '1 ХЕ = {g} г углеводов', 'cr.xeChange': 'изменить в настройках',
       'cr.disclaimer': '⚠️ Вспомогательный инструмент. Не заменяет консультацию эндокринолога. Дозу инсулина определяйте только по схеме, назначенной врачом.',
@@ -201,7 +201,7 @@
     },
 
     en: {
-      'nav.cereal': 'Cereal Carbs',
+      'nav.cereal': 'Cereal Carbs', 'cr.u.kcal': 'kcal',
       'cr.h1': '🥣 Cereal Carbs', 'cr.sub': 'Carbs, CU and macros for a portion — from the package label and the weight of the cooked dish',
       'cr.xe': '1 CU = {g} g of carbs', 'cr.xeChange': 'change in settings',
       'cr.disclaimer': '⚠️ Support tool. It does not replace your doctor. Determine insulin doses only according to the scheme prescribed by your physician.',
