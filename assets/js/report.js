@@ -155,15 +155,18 @@
       var means = Stats.rollingMean(allRd, dayKeys.map(function (k) { return dayEnd[k]; }), 90);
       dayKeys.forEach(function (k, j) { if (means[j] != null) { var i = lastIdx[k]; meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
     }
-    // GMI-область лежит под линиями глюкозы в верхней части графика (значения 6,2…7,5 % занимают уровни глюкозы 12,5…17 ммоль/л),
-    // линии глюкозы могут заходить на неё. GMI: 6,2–6,5 % — зелёная зона (цель), выше 6,5 % — розоватая.
-    var BAND_LO = 12.5;
+    // GMI-область лежит под линиями глюкозы; деления правой оси совпадают с горизонтальными линиями сетки слева:
+    // шаг 0,3 % GMI = 1 ммоль/л глюкозы, 6,2 % лежит на уровне 10 ммоль/л. Линии глюкозы могут заходить на область.
+    // GMI: 6,2–6,5 % — зелёная зона (цель), выше 6,5 % — розоватая (до верха графика).
+    var BAND_LO = 10, GMI_STEP = 0.3;
     var gLo = Units.toDisp(AXIS_MIN), gHi = Units.toDisp(AXIS_MAX), gBand = Units.toDisp(BAND_LO);
     var gvAll = gmiData.filter(function (v) { return v != null; });
-    var mLo = gvAll.length ? Math.min(GMI_AXIS_MIN, Math.floor(Math.min.apply(null, gvAll) * 10) / 10) : GMI_AXIS_MIN;
-    var mHi = gvAll.length ? Math.max(GMI_AXIS_MAX, Math.ceil(Math.max.apply(null, gvAll) * 10) / 10) : GMI_AXIS_MAX;
+    var mLo = GMI_AXIS_MIN;                                         // 6,2 %
+    var perMmol = GMI_STEP;                                         // % GMI на 1 ммоль/л
+    var perDisp = perMmol * (gHi - gLo) > 0 ? perMmol * (AXIS_MAX - AXIS_MIN) / (gHi - gLo) : perMmol; // % GMI на 1 единицу отображаемой оси
     var yMax = gHi;
-    var y2Min = mLo - (mHi - mLo) * (gBand - gLo) / (gHi - gBand);  // значение mLo лежит на уровне глюкозы gBand, mHi — на gHi
+    var y2Min = mLo + (gLo - gBand) * perDisp, y2Max = mLo + (gHi - gBand) * perDisp;
+    var mHi = y2Max;
     var gTicks = Units.isMg() ? [70, 100, 150, 200, 250, 300] : (function () { var a = []; for (var v = 4; v <= AXIS_MAX; v++) a.push(v); return a; })();
     var extraScales = { y: { min: gLo, max: yMax, title: { display: true, text: Units.gLabel(), align: 'start' },
       afterBuildTicks: function (sc) { sc.ticks = gTicks.filter(function (v) { return v <= gHi; }).map(function (v) { return { value: v }; }); },
@@ -173,8 +176,11 @@
         { fill: false, tension: 0.35, borderWidth: 3, yAxisID: 'y2', spanGaps: true, mean: meanData, wcov: wcovData, order: -1,
           // участки, где данных в 90-дневном окне меньше WCOV_MIN %, — пунктиром (GMI неполный)
           segment: { borderDash: function (ctx) { var w = wcovData[ctx.p1DataIndex]; return w != null && w < WCOV_MIN ? [6, 4] : undefined; } } }));
-      extraScales.y2 = { position: 'right', min: y2Min, max: mHi, grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %', align: 'end' },
-        afterBuildTicks: function (sc) { var a = []; for (var v = mLo; v <= mHi + 1e-9; v += 0.3) a.push({ value: Math.round(v * 10) / 10 }); sc.ticks = a; },
+      extraScales.y2 = { position: 'right', min: y2Min, max: y2Max, grid: { drawOnChartArea: false }, title: { display: true, text: 'GMI, %', align: 'end' },
+        afterBuildTicks: function (sc) {
+          // деления ровно напротив линий сетки слева: 6,2 + k·0,3 для каждого деления левой оси (4 … 17 ммоль/л)
+          sc.ticks = gTicks.filter(function (g) { return g >= gBand && g <= gHi; }).map(function (g) { return { value: Math.round((mLo + (g - gBand) * perDisp) * 100) / 100 }; });
+        },
         ticks: { autoSkip: false, callback: function (v) { return v.toFixed(1); } } };
     }
     var zonePlugin = {
