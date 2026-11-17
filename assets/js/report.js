@@ -155,15 +155,15 @@
       var means = Stats.rollingMean(allRd, dayKeys.map(function (k) { return dayEnd[k]; }), 90);
       dayKeys.forEach(function (k, j) { if (means[j] != null) { var i = lastIdx[k]; meanData[i] = means[j]; gmiData[i] = Math.round(Stats.gmi(means[j]) * 100) / 100; lastG = gmiData[i]; } });
     }
-    // Один график — две области: внизу глюкоза (3,5–17 ммоль/л), сверху отдельная область GMI со своей осью справа.
-    // GMI-зона: 6,2–6,5 % — зелёная (цель), выше 6,5 % — розоватая. Значения глюкозы выше 17 обрезаются, в область GMI не заходят.
-    var TOP = 0.35;                                   // доля высоты под область GMI
-    var gLo = Units.toDisp(AXIS_MIN), gHi = Units.toDisp(AXIS_MAX);
+    // GMI-область лежит под линиями глюкозы в верхней части графика (значения 6,2…7,5 % занимают уровни глюкозы 12,5…17 ммоль/л),
+    // линии глюкозы могут заходить на неё. GMI: 6,2–6,5 % — зелёная зона (цель), выше 6,5 % — розоватая.
+    var BAND_LO = 12.5;
+    var gLo = Units.toDisp(AXIS_MIN), gHi = Units.toDisp(AXIS_MAX), gBand = Units.toDisp(BAND_LO);
     var gvAll = gmiData.filter(function (v) { return v != null; });
     var mLo = gvAll.length ? Math.min(GMI_AXIS_MIN, Math.floor(Math.min.apply(null, gvAll) * 10) / 10) : GMI_AXIS_MIN;
     var mHi = gvAll.length ? Math.max(GMI_AXIS_MAX, Math.ceil(Math.max.apply(null, gvAll) * 10) / 10) : GMI_AXIS_MAX;
-    var yMax = gLo + (gHi - gLo) / (1 - TOP);         // верх левой оси (метки выше gHi скрыты)
-    var y2Min = mLo - (mHi - mLo) * (1 - TOP) / TOP;  // низ правой оси: значение mLo лежит на уровне gHi
+    var yMax = gHi;
+    var y2Min = mLo - (mHi - mLo) * (gBand - gLo) / (gHi - gBand);  // значение mLo лежит на уровне глюкозы gBand, mHi — на gHi
     var gTicks = Units.isMg() ? [70, 100, 150, 200, 250, 300] : (function () { var a = []; for (var v = 4; v <= AXIS_MAX; v++) a.push(v); return a; })();
     var extraScales = { y: { min: gLo, max: yMax, title: { display: true, text: Units.gLabel(), align: 'start' },
       afterBuildTicks: function (sc) { sc.ticks = gTicks.filter(function (v) { return v <= gHi; }).map(function (v) { return { value: v }; }); },
@@ -185,13 +185,7 @@
           var p1 = y2.getPixelForValue(from), p2 = y2.getPixelForValue(to); ctx.fillStyle = color; ctx.fillRect(a.left, Math.min(p1, p2), a.right - a.left, Math.abs(p1 - p2));
         };
         ctx.save(); band(mLo, 6.5, 'rgba(52,168,83,0.15)'); band(6.5, mHi, 'rgba(244,143,100,0.18)'); ctx.restore();
-      },
-      // глюкоза рисуется только в своей нижней области
-      beforeDatasetDraw: function (c, args) {
-        if (c.data.datasets[args.index].yAxisID === 'y2') return;
-        var a = c.chartArea, y = c.scales.y; c.ctx.save(); c.ctx.beginPath(); c.ctx.rect(a.left, y.getPixelForValue(gHi), a.right - a.left, a.bottom - y.getPixelForValue(gHi)); c.ctx.clip();
-      },
-      afterDatasetDraw: function (c, args) { if (c.data.datasets[args.index].yAxisID !== 'y2') c.ctx.restore(); }
+      }
     };
     chart('c-glucose', 'line', rd.map(function (r) { return IC.fmtDate(r.t); }), gl, Units.gLabel(), { noZero: true, chartPlugins: [zonePlugin], extra: { plugins: {
       legend: { position: 'top', labels: { filter: function (it, d) { return !d.datasets[it.datasetIndex].zoneLow; } } },
