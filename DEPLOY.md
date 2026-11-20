@@ -121,3 +121,16 @@
 
 **Что делает сайт.** Читает лист той таблицы, которая подключена к сайту (доступ тот же, что к листам расчётов). GMI считается по тем дням, что накоплены, поэтому в начале истории (пока набрано меньше ~63 суток из 90, то есть данных меньше 70% окна) кривая рисуется пунктиром, в подсказке показана полнота данных за 90 дней.
 
+
+## 10. SEO: что настроено и что сделать вручную
+
+Настроено в коде: уникальные title/description, canonical, hreflang (ru/en/x-default), Open Graph и Twitter-теги,
+JSON-LD (Organization, WebSite, WebApplication, FAQPage, Article, HowTo, BreadcrumbList), `robots.txt`, `sitemap.xml`,
+`llms.txt`, `noindex` для `/app/`, `/report/`, `/cereal/` и `404.html`, редиректы со старых адресов.
+
+Вручную (нужен ваш аккаунт):
+1. **Google Search Console** → добавить ресурс «Домен» `insulincalc.online` → подтвердить TXT-записью в DNS (reg.ru) →
+   «Файлы Sitemap» → `https://insulincalc.online/sitemap.xml`.
+2. **Яндекс Вебмастер** и **Bing Webmaster Tools** — то же самое (Bing умеет импорт из Search Console).
+3. **IndexNow**: ключ лежит в корне сайта (`<ключ>.txt`); после выкладки отправить URL страниц на `https://api.indexnow.org/indexnow`.
+4. При смене текстов страниц обновлять `lastmod` в `sitemap.xml`.

@@ -1,0 +1,10 @@
+# InsulinCalc
+
+> Free web calculator of mealtime and correction insulin boluses for type 1 diabetes (carbs / bread units, insulin-to-carb ratio, insulin sensitivity factor) with a diary stored in the user's own Google Sheet. Support tool, not medical advice.
+
+- [Insulin dose calculator (RU)](https://insulincalc.online/): overview, FAQ
+- [Insulin dose calculator (EN)](https://insulincalc.online/en/): overview, FAQ
+- [How to calculate an insulin dose (EN)](https://insulincalc.online/en/insulin-dose-guide/): formulas, worked examples
+- [Как рассчитать дозу инсулина (RU)](https://insulincalc.online/kak-rasschitat-dozu-insulina/): формулы, примеры
+- [Privacy](https://insulincalc.online/privacy/)
+- [Terms](https://insulincalc.online/terms/)
