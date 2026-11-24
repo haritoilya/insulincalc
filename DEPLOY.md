@@ -128,11 +128,21 @@
 
 Настроено в коде: уникальные title/description, canonical, hreflang (ru/en/x-default), Open Graph и Twitter-теги,
 JSON-LD (Organization, WebSite, WebApplication, FAQPage, Article, HowTo, BreadcrumbList), `robots.txt`, `sitemap.xml`,
-`llms.txt`, `noindex` для `/app/`, `/report/`, `/cereal/` и `404.html`, редиректы со старых адресов.
+`llms.txt`, `noindex` для `/app/`, `/report/`, `/cereal/` и `404.html`, ключ IndexNow, загрузчик аналитики `assets/js/analytics.js`.
 
 Вручную (нужен ваш аккаунт):
-1. **Google Search Console** → добавить ресурс «Домен» `insulincalc.online` → подтвердить TXT-записью в DNS (reg.ru) →
-   «Файлы Sitemap» → `https://insulincalc.online/sitemap.xml`.
-2. **Яндекс Вебмастер** и **Bing Webmaster Tools** — то же самое (Bing умеет импорт из Search Console).
-3. **IndexNow**: ключ лежит в корне сайта (`<ключ>.txt`); после выкладки отправить URL страниц на `https://api.indexnow.org/indexnow`.
-4. При смене текстов страниц обновлять `lastmod` в `sitemap.xml`.
+1. **Google Search Console** → «Домен» `insulincalc.online` → подтверждение TXT-записью в DNS (reg.ru) → «Файлы Sitemap» → `sitemap.xml`.
+2. **Яндекс Вебмастер** (webmaster.yandex.ru) → добавить `https://insulincalc.online` → подтверждение мета-тегом (пришлите код, добавлю в `<head>`) →
+   «Индексирование → Файлы Sitemap» → `https://insulincalc.online/sitemap.xml` → «Региональность»: Россия, если нужна.
+3. **Яндекс Метрика** (metrika.yandex.ru) → создать счётчик для `insulincalc.online` (Вебвизор выключить) → номер вписать в `YM_ID` в `assets/js/analytics.js`;
+   подключить счётчик к Вебмастеру (Вебмастер → Настройки → Счётчики).
+4. **Google Analytics 4** (по желанию) → ID вида `G-XXXXXXXXXX` вписать в `GA_ID`. После включения аналитики дополните раздел 5 в `privacy/index.html`
+   (какие сервисы, что собирается, cookie) — сейчас там общая формулировка.
+5. **Bing Webmaster Tools** — импорт из Search Console.
+6. **IndexNow** (Яндекс и Bing быстро узнают об изменениях):
+   ```bash
+   curl -X POST https://yandex.com/indexnow -H "Content-Type: application/json" -d '{"host":"insulincalc.online","key":"e6854dafc8178308eb101ca214ce8952","keyLocation":"https://insulincalc.online/e6854dafc8178308eb101ca214ce8952.txt","urlList":["https://insulincalc.online/","https://insulincalc.online/en/","https://insulincalc.online/kak-rasschitat-dozu-insulina/","https://insulincalc.online/en/insulin-dose-guide/"]}'
+   ```
+7. При смене текстов страниц обновляйте `lastmod` в `sitemap.xml`.
+
+Аналитика подключена только к информационным страницам (главные, гиды, документы). На `/app/`, `/report/`, `/cereal/` её нет — данные о здоровье в статистику не попадают.
