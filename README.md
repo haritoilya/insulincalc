@@ -18,7 +18,8 @@
 | `assets/js/stats.js` | Расчёт УК/ФЧИ (чистые события, регрессия, по приёмам), агрегаты |
 | `assets/js/report.js` | Страница отчётов |
 | `assets/js/i18n.js` | Переводы RU / EN |
-| `vercel.json` | Настройки Vercel: редиректы `/sasha → /app/`, заголовки, noindex для *.vercel.app |
+| `vercel.json` | Настройки Vercel (после переезда на GitHub Pages не нужен). Переезд: `MIGRATION_GITHUB_PAGES.md` |
+| `.github/workflows/pages.yml`, `CNAME`, `tools/check_site.sh` | Выкладка на GitHub Pages и проверка сайта после переезда |
 | `robots.txt`, `sitemap.xml`, `manifest.webmanifest` | SEO / PWA |
 
 ## Схема листа `Data`

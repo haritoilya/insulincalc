@@ -1,5 +1,7 @@
 # Развёртывание InsulinCalc
 
+> **Хостинг переезжает с Vercel на GitHub Pages** — пошаговая инструкция в файле `MIGRATION_GITHUB_PAGES.md`.
+
 Порядок: **GitHub (публичный репозиторий) → Vercel (тестовый адрес *.vercel.app) → Google Cloud (вход и таблицы) → проверка → домен insulincalc.online → SEO.**
 Всё бесплатно. Время: ~1–1,5 часа.
 

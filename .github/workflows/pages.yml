@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+# Сайт выкладывается при каждом изменении ветки main (и вручную: Actions → Deploy to GitHub Pages → Run workflow).
+# Единоразовая настройка: репозиторий → Settings → Pages → Build and deployment → Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Collect site files
+        run: |
+          mkdir _site
+          tar --exclude='./.git' --exclude='./.github' --exclude='./_site' --exclude='./tools' \
+              --exclude='*.md' --exclude='./vercel.json' --exclude='./.gitignore' --exclude='.DS_Store' \
+              -cf - . | tar -xf - -C _site
+          touch _site/.nojekyll
+          for f in index.html 404.html CNAME robots.txt sitemap.xml app/index.html cereal/index.html report/index.html; do
+            test -f "_site/$f" || { echo "::error::нет файла $f"; exit 1; }
+          done
+          echo "Файлов в сайте: $(find _site -type f | wc -l)"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
